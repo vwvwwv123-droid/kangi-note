@@ -349,7 +349,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .af input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
 .auth-err{min-height:18px;color:var(--seal);font-size:13px}
 .auth-go{width:100%;padding:12px;font-size:15px}
-.auth-foot{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.5}
+.auth-link{display:block;margin:10px auto 0;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer} .auth-foot{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.5}
 .userbox{position:relative;display:flex;align-items:center;gap:10px}
 .user-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:5px 12px 5px 6px;cursor:pointer;font-weight:600;font-size:13px}
 .user-chip .av{width:24px;height:24px;border-radius:50%;background:#f3c94b;display:grid;place-items:center;font-size:13px}
@@ -1374,11 +1374,12 @@ function authHTML(mode){
     <p class="auth-sub">강숙이랑 같이 N5부터 N1까지 한자를 정복해 보자.</p>
     <div class="auth-tabs" role="tablist"><button type="button" role="tab" data-m="login" aria-selected="${!sig}">로그인</button><button type="button" role="tab" data-m="signup" aria-selected="${sig}">회원가입</button></div>
     <form id="authForm" class="auth-form" novalidate>
-      <label class="af">이메일<input id="aEmail" type="email" autocomplete="${sig?'email':'username'}" required placeholder="you@example.com"></label>
+      <label class="af">이메일<input id="aEmail" type="email" autocomplete="${sig?'email':'username'}" required placeholder="hyunwoo@gmail.com"></label>
       <label class="af">비밀번호<input id="aPw" type="password" autocomplete="${sig?'new-password':'current-password'}" required minlength="6" placeholder="6자 이상"></label>
       ${sig?'<label class="af">비밀번호 확인<input id="aPw2" type="password" autocomplete="new-password" required placeholder="한 번 더"></label>':''}
       <div class="auth-err" id="aErr" role="alert"></div>
       <button class="btn primary auth-go" type="submit" id="aGo">${sig?'가입하고 시작하기':'로그인'}</button>
+      ${sig?'':'<button type="button" class="auth-link" id="aForgot">비밀번호 찾기</button>'}
     </form>
     <div class="auth-foot">${cloudOn()?'🔒 계정과 학습 기록은 서버에 저장돼서 폰·PC 어디서든 이어서 공부할 수 있어요.':'⚠️ 지금은 서버에 연결할 수 없어서 계정이 이 기기(브라우저)에만 저장돼요.'}</div>
   </div>`;
@@ -1386,6 +1387,7 @@ function authHTML(mode){
 function showAuth(mode='login'){
   $('#app').hidden=true; const el=$('#authScreen'); el.hidden=false; el.innerHTML=authHTML(mode);
   el.querySelectorAll('.auth-tabs button').forEach(b=>b.onclick=()=>showAuth(b.dataset.m));
+  const fg=$('#aForgot'); if(fg) fg.onclick=()=>showForgot($('#aEmail').value);
   setTimeout(()=>$('#aEmail')?.focus({preventScroll:true}),50);
   $('#authForm').onsubmit=async e=>{ e.preventDefault(); const em=$('#aEmail').value, pw=$('#aPw').value, err=$('#aErr');
     err.textContent='';
@@ -1395,6 +1397,55 @@ function showAuth(mode='login'){
     $('#aGo').disabled=true; $('#aGo').textContent='잠깐만…';
     try{ const u=mode==='signup'?await Auth.signUp(em,pw):await Auth.signIn(em,pw); try{localStorage.setItem('kn-seen','1')}catch(_){} enterApp(u,true); }
     catch(x){ err.textContent=x.message||'문제가 생겼어요. 다시 시도해 주세요.'; $('#aGo').disabled=false; $('#aGo').textContent=mode==='signup'?'가입하고 시작하기':'로그인'; }
+  };
+}
+const appURL=()=>location.origin+location.pathname;
+function showForgot(prefill){
+  $('#app').hidden=true; const el=$('#authScreen'); el.hidden=false;
+  el.innerHTML=`<div class="auth-card">
+    <div class="auth-hero">${scene('c=stand,happy,think@165,176,1;q@225,52')}</div>
+    <h1 class="auth-title">비밀번호 찾기</h1>
+    <p class="auth-sub">${cloudOn()?'가입한 이메일을 적어 주면 새 비밀번호를 정할 수 있는 링크를 보내 줄게.':'지금은 서버에 연결할 수 없어서 비밀번호를 찾을 수 없어. 인터넷을 확인하고 다시 열어 줘.'}</p>
+    <form id="fgForm" class="auth-form" novalidate>
+      <label class="af">이메일<input id="fgEmail" type="email" autocomplete="email" required placeholder="hyunwoo@gmail.com" value="${esc(prefill||'')}"></label>
+      <div class="auth-err" id="fgErr" role="alert"></div>
+      <button class="btn primary auth-go" type="submit" id="fgGo" ${cloudOn()?'':'disabled'}>재설정 메일 보내기</button>
+      <button type="button" class="auth-link" id="fgBack">로그인으로 돌아가기</button>
+    </form>
+  </div>`;
+  $('#fgBack').onclick=()=>showAuth('login');
+  setTimeout(()=>$('#fgEmail')?.focus({preventScroll:true}),50);
+  $('#fgForm').onsubmit=async e=>{ e.preventDefault(); const em=$('#fgEmail').value.trim().toLowerCase(), err=$('#fgErr'), bt=$('#fgGo'); err.textContent='';
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return err.textContent='이메일 형식을 확인해 주세요.';
+    bt.disabled=true; bt.textContent='보내는 중…';
+    try{ const c=await sb(); const {error}=await c.auth.resetPasswordForEmail(em,{redirectTo:appURL()}); if(error) throw new Error(cloudMsg(error));
+      el.querySelector('.auth-sub').textContent='메일을 보냈어 📮 받은 메일의 링크를 누르면 새 비밀번호를 정하는 화면이 열려. 메일이 안 보이면 스팸함도 확인해 줘.';
+      bt.textContent='보냈어요'; }
+    catch(x){ err.textContent=x.message||'메일을 보내지 못했어요. 잠시 뒤 다시 시도해 주세요.'; bt.disabled=false; bt.textContent='재설정 메일 보내기'; }
+  };
+}
+function showNewPassword(user){
+  $('#app').hidden=true; const el=$('#authScreen'); el.hidden=false;
+  el.innerHTML=`<div class="auth-card">
+    <div class="auth-hero">${scene('c=stand,happy,pointL@165,176,1;spark@95,50')}</div>
+    <h1 class="auth-title">새 비밀번호 정하기</h1>
+    <p class="auth-sub">${esc(user.email||'')} 계정의 새 비밀번호를 적어 줘.</p>
+    <form id="npForm" class="auth-form" novalidate>
+      <label class="af">새 비밀번호<input id="npPw" type="password" autocomplete="new-password" required minlength="6" placeholder="6자 이상"></label>
+      <label class="af">비밀번호 확인<input id="npPw2" type="password" autocomplete="new-password" required placeholder="한 번 더"></label>
+      <div class="auth-err" id="npErr" role="alert"></div>
+      <button class="btn primary auth-go" type="submit" id="npGo">바꾸고 시작하기</button>
+    </form>
+  </div>`;
+  setTimeout(()=>$('#npPw')?.focus({preventScroll:true}),50);
+  $('#npForm').onsubmit=async e=>{ e.preventDefault(); const pw=$('#npPw').value, err=$('#npErr'), bt=$('#npGo'); err.textContent='';
+    if(pw.length<6) return err.textContent='비밀번호는 6자 이상으로 해 주세요.';
+    if(pw!==$('#npPw2').value) return err.textContent='비밀번호가 서로 달라요.';
+    bt.disabled=true; bt.textContent='잠깐만…';
+    try{ const c=await sb(); const {error}=await c.auth.updateUser({password:pw}); if(error) throw new Error(cloudMsg(error));
+      try{history.replaceState(null,'',appURL())}catch(_){}
+      const u=Auth._local(user.id,user.email,false); await cloudPullProfile(u); toast('비밀번호를 바꿨어! 이제 이걸로 로그인하면 돼.'); enterApp(u,true); }
+    catch(x){ err.textContent=x.message||'바꾸지 못했어요. 링크가 만료됐을 수 있으니 다시 요청해 주세요.'; bt.disabled=false; bt.textContent='바꾸고 시작하기'; }
   };
 }
 function showNickname(u){
@@ -1522,9 +1573,12 @@ function boot(){
   $('#authScreen').hidden=false; $('#authScreen').innerHTML=`<div class="auth-card"><div class="auth-hero">${scene('c=stand,happy,wave@165,176,1')}</div><p class="auth-sub" style="text-align:center">강숙이가 문 여는 중…</p></div>`;
   probeCloud().then(async ok=>{
     if(ok){ try{ const c=await sb(); const {data}=await c.auth.getSession(); const s=data&&data.session;
+        const recovering=/type=recovery/.test(location.hash||'')||/type=recovery/.test(location.search||'');
+        if(s&&recovering) return showNewPassword(s.user);
+        if(recovering){ ACC.session=null; saveAcc(); showAuth('login'); $('#aErr').textContent='재설정 링크가 만료됐거나 이미 사용됐어요. 비밀번호 찾기를 다시 해 주세요.'; return; }
         if(s){ const u=Auth._local(s.user.id,s.user.email,false); await cloudPullProfile(u); return enterApp(u,false); }
-        ACC.session=null; saveAcc(); }catch(e){} return showAuth(localStorage.getItem('kn-seen')?'login':'signup'); }
-    const u=Auth.current(); if(u&&!u.cloud) enterApp(u,false); else { ACC.session=null; showAuth(Object.values(ACC.users).some(x=>!x.cloud)?'login':'signup'); }
+        ACC.session=null; saveAcc(); }catch(e){} return showAuth('login'); }
+    const u=Auth.current(); if(u&&!u.cloud) enterApp(u,false); else { ACC.session=null; showAuth('login'); }
   });
 }
 
