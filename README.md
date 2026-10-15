@@ -5,7 +5,7 @@
 - 강숙이 캐릭터 시트: https://claude.ai/artifact/8cEgu97nC5DYhHnaEybQA6
 - 복습 방식 비교 문서(지금 방식 vs FSRS): https://claude.ai/code/artifact/12a91aa7-e135-4849-ae1d-95774eec7d34
 - 단독 HTML 파일(kanji-note.html)도 매 변경 때 같이 갱신해서 보냄 — 폰/PC에서 Claude 없이 열기용, 이 파일이 Supabase 서버에 연결됨.
-- 설치형 웹앱(PWA, v20 2026-10-16): manifest.json + icons/ + sw.js. 홈 화면에 추가하면 앱처럼 실행(standalone). 서비스워커는 index.html 네트워크 우선(새 버전 즉시 반영, 오프라인 시 마지막 사본), 아이콘·폰트는 캐시 우선. 아이콘: 노랑 바탕 '漢' + 빨간 점. 설치된 앱과 브라우저 탭은 저장소가 분리되어 각각 로그인 필요.
+- 설치형 웹앱(PWA, v20 2026-10-16): manifest.json + icons/ + sw.js. 홈 화면에 추가하면 앱처럼 실행(standalone). 서비스워커는 index.html 네트워크 우선(새 버전 즉시 반영, 오프라인 시 마지막 사본), 아이콘·폰트는 캐시 우선. 아이콘: 사용자가 준 주황 고양이 사진(얼굴 크롭). 설치된 앱과 브라우저 탭은 저장소가 분리되어 각각 로그인 필요.
 - 범위: JLPT N5(79)·N4(166)·N3(367)·N2(367)·N1(1,232) = 2,211자 (v17, 2026-10-15 N2·N1 추가 완료).
 - 데이터 출처: 읽기·JLPT 레벨·획수는 davidluzgouveia/kanji-data(KANJIDIC 기반). 획순은 KanjiVG(CC BY-SA 3.0). 읽기 빈도순은 JmdictFurigana + wordfreq. 훈음·단어·예문·부수·부품·암기 문장·장면은 직접 작성.
 - 계획: 지금은 아티팩트, 나중에 앱으로 전환 예정. 여러 사람이 쓰는 앱.

@@ -1,7 +1,7 @@
 /* 한자 노트 service worker
    - 앱 본문(index.html)은 항상 네트워크 우선: 새 버전이 올라오면 바로 반영. 오프라인일 때만 마지막 사본 사용.
    - 아이콘·매니페스트·폰트 등 정적 파일은 캐시 우선. */
-const VER = 'kn-v1';
+const VER = 'kn-v2';
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
