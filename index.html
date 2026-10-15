@@ -1257,6 +1257,7 @@ function renderWrite(){
 }
 /* ---------- accounts · sessions · analytics ---------- */
 // 서버 연결 설정: Supabase 프로젝트 주소와 공개(anon) 키를 넣으면 여러 기기·사용자 간 계정과 기록이 공유돼요.
+const INIT_URL={hash:location.hash||'',search:location.search||''}; // supabase-js가 지우기 전에 보관
 const CLOUD={url:'https://qorknbibcxgunaoehhew.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcmtuYmliY3hndW5hb2VoaGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNDYzOTgsImV4cCI6MjEwNzYyMjM5OH0.wHOEpzYLX4KoLy49bDHzSKnoyG1wMDo9lIa5KJR6l90'};
 let CLOUD_OK=null; // null=확인 전, true=서버 연결됨, false=연결 불가(이 기기 모드)
 const cloudOn=()=>CLOUD_OK===true;
@@ -1285,7 +1286,9 @@ async function hashPw(pw,salt){
 let SB=null;
 async function sb(force){ if(!force&&!cloudOn()) return null; if(SB) return SB;
   await new Promise((ok,no)=>{const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'; s.onload=ok; s.onerror=no; document.head.appendChild(s);});
-  SB=window.supabase.createClient(CLOUD.url,CLOUD.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'kn-sb-auth'}}); return SB; }
+  SB=window.supabase.createClient(CLOUD.url,CLOUD.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'kn-sb-auth'}});
+  SB.auth.onAuthStateChange((ev,sess)=>{ if(ev==='PASSWORD_RECOVERY'&&sess&&sess.user&&!document.getElementById('npForm')) showNewPassword(sess.user); });
+  return SB; }
 const Auth={
   current(){ return ACC.session&&ACC.users[ACC.session]||null },
   async signUp(email,pw){
@@ -1573,9 +1576,11 @@ function boot(){
   $('#authScreen').hidden=false; $('#authScreen').innerHTML=`<div class="auth-card"><div class="auth-hero">${scene('c=stand,happy,wave@165,176,1')}</div><p class="auth-sub" style="text-align:center">강숙이가 문 여는 중…</p></div>`;
   probeCloud().then(async ok=>{
     if(ok){ try{ const c=await sb(); const {data}=await c.auth.getSession(); const s=data&&data.session;
-        const recovering=/type=recovery/.test(location.hash||'')||/type=recovery/.test(location.search||'');
+        const urlAll=INIT_URL.hash+' '+INIT_URL.search+' '+(location.hash||'')+' '+(location.search||'');
+        const recovering=/type=recovery/.test(urlAll), linkErr=/error_code=|error_description=|error=access_denied/.test(urlAll);
         if(s&&recovering) return showNewPassword(s.user);
-        if(recovering){ ACC.session=null; saveAcc(); showAuth('login'); $('#aErr').textContent='재설정 링크가 만료됐거나 이미 사용됐어요. 비밀번호 찾기를 다시 해 주세요.'; return; }
+        if(recovering||linkErr){ ACC.session=null; saveAcc(); try{history.replaceState(null,'',appURL())}catch(_){} showAuth('login');
+          $('#aErr').textContent=/otp_expired/.test(urlAll)?'재설정 링크가 만료됐거나 이미 사용됐어요. 비밀번호 찾기를 다시 해 주세요.':'재설정 링크를 처리하지 못했어요. 비밀번호 찾기를 다시 해 주세요.'; return; }
         if(s){ const u=Auth._local(s.user.id,s.user.email,false); await cloudPullProfile(u); return enterApp(u,false); }
         ACC.session=null; saveAcc(); }catch(e){} return showAuth('login'); }
     const u=Auth.current(); if(u&&!u.cloud) enterApp(u,false); else { ACC.session=null; showAuth('login'); }
