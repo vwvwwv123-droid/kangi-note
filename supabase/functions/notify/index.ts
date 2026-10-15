@@ -47,17 +47,19 @@ Deno.serve(async (req) => {
     await log(p.id, "test", n); return Response.json({ ok: true, sent: n });
   }
 
-  const [{ data: profs }, { data: progs }] = await Promise.all([
-    SB.from("profiles").select("id,name,last_seen").in("id", uids),
-    SB.from("progress").select("user_id,state").in("user_id", uids),
-  ]);
-  const prog: Record<string, any> = {}; for (const r of progs || []) prog[r.user_id] = r.state || {};
+  // 매 분: 프로필(작음)만 읽고, 실제로 알림 대상이 될 수 있는 사용자의 progress만 읽는다 (무료 플랜 전송량 절약)
+  const { data: profs } = await SB.from("profiles").select("id,name,last_seen").in("id", uids);
   const k = kst(now); const hh = k.getUTCHours(), mm = k.getUTCMinutes(), dd = k.getUTCDate();
   const t8 = kst8Today(now), t8prev = t8 - DAY;
   const is8 = hh === 8 && mm <= 2;              // 08:00~08:02 (크론 지연 여유), 로그로 중복 방지
+  const inWindow = (p: any) => { const ls = p.last_seen ? Date.parse(p.last_seen) : 0; return ls && now - ls >= 10 * MIN && now - ls < 12 * MIN; };
+  const targets = (profs || []).filter(p => is8 || inWindow(p));
+  if (!targets.length) return Response.json({ ok: true, users: uids.length, sent: 0 });
+  const { data: progs } = await SB.from("progress").select("user_id,state").in("user_id", targets.map(p => p.id));
+  const prog: Record<string, any> = {}; for (const r of progs || []) prog[r.user_id] = r.state || {};
   let sent = 0;
 
-  for (const p of profs || []) {
+  for (const p of targets) {
     const cards: Record<string, Card> = (prog[p.id]?.cards) || {};
     const list = Object.values(cards).filter(c => typeof c.d === "number");
     const dueAll = list.filter(c => c.d! <= now).length;                       // 지금 복습 대기 전체
