@@ -362,6 +362,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .af input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
 .auth-err{min-height:18px;color:var(--seal);font-size:13px}
 .auth-go{width:100%;padding:12px;font-size:15px}
+.gd-list{margin:0;padding-left:18px;display:grid;gap:7px;font-size:14px;line-height:1.55} .gd-list li::marker{color:var(--accent)}
 .auth-link{display:block;margin:10px auto 0;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer} .auth-foot{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.5}
 .userbox{position:relative;display:flex;align-items:center;gap:10px}
 .user-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:5px 12px 5px 6px;cursor:pointer;font-weight:600;font-size:13px}
@@ -1521,6 +1522,7 @@ const GUIDE=[
  {sc:'books@85,170,1;c=sit:book,happy@195,176,.95', t:'문장 속에서 익혀', m:'맥락 학습', b:'한자는 단어와 문장 속에서 진짜 의미가 보여. 카드마다 레벨에 맞는 예문이 3개씩 있고, 문장 속 한자를 누르면 돋보기로 뜻을 알려 줘.'},
  {sc:'target@95,170,1;c=jump:maru,joy,bighold@205,182,.9;spark@250,50', t:'꺼내 쓰는 연습이 실력이 돼', m:'인출 연습 · 섞어 풀기 · 생성 효과', b:'퀴즈는 배운 한자를 섞어서 내. 비슷한 한자를 섞어 풀면 구별하는 힘이 생겨. 작문에서는 예문을 직접 써 보는데, 직접 만들어 낸 답은 고르기만 한 답보다 오래 남아.'},
  {sc:'board@110,170,1.15;w=毎日@110,88,34;c=stand,joy,pointL@245,176,.9', t:'매일 조금씩이 제일 강해', m:'분산 학습 · 습관', b:'하루에 몰아서 하는 것보다 매일 조금씩 하는 게 훨씬 효과적이야. ‘오늘의 한자’로 매일 단어 하나, 연속 학습 기록도 챙겨 봐. 즐겨찾기와 검색도 잊지 마!'},
+ {sc:'clock@70,165,.9;c=stand,happy,pointL@200,176,.95;b=8:00@262,60', t:'복습할 때가 되면 내가 알려 줄게', m:'복습 대기 · 알림', b:['카드에 답하면 다음 복습 시각이 정해져. 애매해요·알아요·쉬워요는 “N일 뒤 아침 8시”, 몰라요는 “10분 뒤”야.','시각이 지난 카드는 목록 탭의 주황 숫자(복습 대기)로 표시돼. 앱을 안 열어도 알림이 가도록 이름 메뉴에서 ‘복습 알림 받기’를 켜 줘.','🔔 몰라요 알림: 공부를 마치고 앱을 나간 지 10분 뒤에 한 번. 그 전에 다시 들어오면 알림 없이 복습 대기에만 남아.','🔔 아침 8시 알림: 그날 새로 복습일이 된 카드가 있을 때만 한 번. 이미 밀린 카드 때문에 매일 울리진 않아.','🔔 매월 1일 아침 8시: 밀린 카드가 남아 있으면 “밀린 한자 복습카드 N개”로 한 번만 알려 줘.'], x:'알림은 설치한 앱에서만 와. 아이폰은 홈 화면에 추가한 뒤에 켜 줘.'},
  {sc:'c=jump,joy,up@165,178,1;spark@90,50;spark@240,40;spark@215,105,.6', t:'자, 시작해 볼까?', b:'오늘 할 일에서 ‘학습 시작’을 누르면 레벨과 하루 공부량을 정할 수 있어. 이 설명은 오른쪽 위 이름 메뉴에서 언제든 다시 볼 수 있어. 같이 힘내자!'}
 ];
 let gi=0;
@@ -1530,7 +1532,7 @@ function renderGuide(first){
   $('#guideBody').innerHTML=`<div class="gd-scene">${scene(g.sc)}</div>
     ${g.m?`<div class="gd-method">${esc(g.m)}</div>`:''}
     <h2 class="gd-title">${esc(g.t)}</h2>
-    <div class="gd-talk"><span class="who">강숙이</span><p>${esc(g.b)}</p>${g.x?`<p class="gd-x">${esc(g.x)}</p>`:''}</div>
+    <div class="gd-talk"><span class="who">강숙이</span>${Array.isArray(g.b)?`<ul class="gd-list">${g.b.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:`<p>${esc(g.b)}</p>`}${g.x?`<p class="gd-x">${esc(g.x)}</p>`:''}</div>
     <div class="gd-dots" aria-label="${gi+1} / ${GUIDE.length}">${GUIDE.map((_,i)=>`<i class="${i===gi?'on':''}"></i>`).join('')}</div>
     <div class="row gd-nav"><button class="btn" id="gdPrev" ${gi?'':'disabled'}>이전</button><button class="btn gd-skip" id="gdSkip">${last?'':'건너뛰기'}</button><button class="btn primary" id="gdNext">${last?'시작하기':'다음'}</button></div>`;
   $('#gdPrev').onclick=()=>{gi--;renderGuide(first)};

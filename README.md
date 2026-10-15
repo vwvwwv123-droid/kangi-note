@@ -10,6 +10,13 @@
 - 데이터 출처: 읽기·JLPT 레벨·획수는 davidluzgouveia/kanji-data(KANJIDIC 기반). 획순은 KanjiVG(CC BY-SA 3.0). 읽기 빈도순은 JmdictFurigana + wordfreq. 훈음·단어·예문·부수·부품·암기 문장·장면은 직접 작성.
 - 계획: 지금은 아티팩트, 나중에 앱으로 전환 예정. 여러 사람이 쓰는 앱.
 
+## 구조 개요 (2026-10-16)
+- GitHub(저장소 kangi-note + Pages): 앱 파일 보관·공개 주소. Claude GitHub App으로 Claude가 직접 푸시 → 1~2분 뒤 반영.
+- Supabase: Auth(이메일 로그인·비번 재설정), DB(profiles/progress/events/daily_activity/push_subscriptions/notif_log, RLS로 본인 것만), Edge Function notify + pg_cron 1분마다(알림 발송).
+- 폰: PWA(홈 화면 설치). 서비스워커가 푸시 수신·배지·오프라인 사본. 푸시 전달은 구글·애플 서버.
+- 흐름: 앱 열기 → 서버 확인·세션 → progress 내려받기 → 카드 채점(FSRS, 폰에서 계산) → progress 저장, last_seen 30초마다 → 앱 닫으면 last_seen 멈춤 → Edge Function이 10분 뒤/아침 8시/매월 1일 조건으로 푸시.
+- 전부 무료 구간(Supabase 무료 한도의 10% 미만).
+
 ## 서버 (Supabase) — v17
 - 프로젝트: kanji-note (ref qorknbibcxgunaoehhew, 서울 ap-northeast-2, 무료 플랜, org vwvwwv123@gmail.com's Org)
 - URL https://qorknbibcxgunaoehhew.supabase.co, 앱에는 공개 anon 키만 들어감.
@@ -25,7 +32,7 @@
 ## 로그인·가이드·분석 — v18 (2026-10-16)
 - 로그인/회원가입 화면: 강숙이가 토리이·벚꽃 앞에서 「ようこそ!」 손 흔드는 장면. 첫 화면은 항상 로그인 탭, 이메일 예시 hyunwoo@gmail.com. 가입 후 닉네임(2~12자) 설정.
 - 비밀번호 찾기(v18): 로그인 버튼 아래 '비밀번호 찾기' → 이메일 입력 → Supabase 재설정 메일(redirectTo=앱 주소) → 링크 열면 '새 비밀번호 정하기' 화면(URL의 type=recovery 감지) → 변경 후 바로 앱 진입. 서버 연결 안 되면 버튼 비활성.
-- 첫 로그인 시 강숙이 사용 설명 9장: 소개, FSRS, 능동적 회상, 연상 기억법·이중 부호화, 획순·운동 기억, 맥락 학습, 인출 연습·섞어 풀기·생성 효과, 분산 학습·습관, 시작. 이름 메뉴에서 다시 보기.
+- 첫 로그인 시 강숙이 사용 설명 9장: 소개, FSRS, 능동적 회상, 연상 기억법·이중 부호화, 획순·운동 기억, 맥락 학습, 인출 연습·섞어 풀기·생성 효과, 분산 학습·습관, 복습 대기·알림(v23 추가, 본문이 목록 형식), 시작 — 총 10장. 이름 메뉴에서 다시 보기.
 - 이름 메뉴: 강숙이의 사용 설명 / 내 학습 기록 / 사용자 분석(관리자) / 닉네임 바꾸기 / 로그아웃.
 - 사용자 분석: 가입자, 오늘 접속, 7일 활성, 총 학습 시간, 14일 일별 접속자 막대그래프, 사용자별 표(가입일·마지막 접속·접속 횟수·학습 시간·공부한 한자·복습·정답률), CSV 복사.
 
