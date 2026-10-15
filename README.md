@@ -1,6 +1,6 @@
 # 한자 노트 앱 (漢字ノート)
 
-- 앱 주소(정식, 2026-10-16~): https://vwvwwv123-droid.github.io/kangi-note/ — GitHub Pages, 저장소 vwvwwv123-droid/kangi-note(Public, 파일 index.html 하나). 수정 시 index.html을 저장소에 다시 업로드(Add file → Upload files)하면 같은 주소로 반영.
+- 앱 주소(정식, 2026-10-16~): https://vwvwwv123-droid.github.io/kangi-note/ — GitHub Pages, 저장소 vwvwwv123-droid/kangi-note(Public, 파일 index.html 하나). 2026-10-16부터 Claude가 GitHub에 직접 푸시(Claude GitHub App 설치됨) → 수정하면 Claude가 main에 올리고 1~2분 뒤 같은 주소에 반영. 저장소에 README.md(이 메모)도 함께 둠.
 - 옛 아티팩트 링크: https://claude.ai/artifact/J2daucHtcxidefpCnZZ2Xw — 아티팩트 안에서는 외부 서버가 막혀 '이 기기 모드'로만 동작하므로 폰·PC 공용에는 쓰지 않음.
 - 강숙이 캐릭터 시트: https://claude.ai/artifact/8cEgu97nC5DYhHnaEybQA6
 - 복습 방식 비교 문서(지금 방식 vs FSRS): https://claude.ai/code/artifact/12a91aa7-e135-4849-ae1d-95774eec7d34
