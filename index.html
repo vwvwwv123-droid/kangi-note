@@ -3,10 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>한자 노트 · 漢字ノート</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f4a8a">
+<meta name="application-name" content="한자 노트">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="한자 노트">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>한자 노트 · 漢字ノート</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -1257,7 +1266,8 @@ function renderWrite(){
 }
 /* ---------- accounts · sessions · analytics ---------- */
 // 서버 연결 설정: Supabase 프로젝트 주소와 공개(anon) 키를 넣으면 여러 기기·사용자 간 계정과 기록이 공유돼요.
-const INIT_URL={hash:location.hash||'',search:location.search||''}; // supabase-js가 지우기 전에 보관
+const INIT_URL={hash:location.hash||'',search:location.search||''};
+if('serviceWorker' in navigator && location.protocol==='https:'){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); } // supabase-js가 지우기 전에 보관
 const CLOUD={url:'https://qorknbibcxgunaoehhew.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcmtuYmliY3hndW5hb2VoaGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNDYzOTgsImV4cCI6MjEwNzYyMjM5OH0.wHOEpzYLX4KoLy49bDHzSKnoyG1wMDo9lIa5KJR6l90'};
 let CLOUD_OK=null; // null=확인 전, true=서버 연결됨, false=연결 불가(이 기기 모드)
 const cloudOn=()=>CLOUD_OK===true;
