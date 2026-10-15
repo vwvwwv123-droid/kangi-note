@@ -336,6 +336,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .radgroup h3{margin:0;font-size:14px;font-weight:500;display:flex;gap:8px;align-items:baseline}
 .radgroup h3 .rg{font-family:var(--f-kanji);font-size:24px}
 .radgroup h3 small{color:var(--muted)}
+.radgroup h3 .lvtag{font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 8px;font-size:13px}
+.radgroup h3 .btn.small{margin-left:auto;padding:4px 10px;font-size:12px}
 .qbuild{margin:18px 0 10px}
 .keys{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
 @media (max-width:520px){.keys{display:none}}
@@ -882,7 +884,7 @@ function newList(){rollDay(); const left=Math.max(0,S.settings.newPerDay-S.daily
 function fApply(k,g){
   const now=Date.now(); const prev=card(k); const p=fPreview(prev,now)[g];
   const c=prev||(S.cards[k]={n:0,w:0});
-  c.S=p.S; c.D=p.D; c.L=now; c.d=p.due; c.n=(c.n||0)+1; if(g===1) c.w=(c.w||0)+1;
+  c.S=p.S; c.D=p.D; c.L=now; c.d=p.due; c.n=(c.n||0)+1; c.g=g; if(g===1) c.w=(c.w||0)+1;
   return !prev;
 }
 /* grade: 1 몰라요, 2 애매해요, 3 알아요, 4 쉬워요 */
@@ -1707,6 +1709,7 @@ function startStudy(mode){
   let q;
   if(mode==='extra'){ q=pool().filter(x=>!card(x.k)).slice(0,5); }
   else if(mode==='fav'){ q=shuffle(favList()); }
+  else if(mode&&mode.keys){ q=mode.keys.map(k=>BY[k]).filter(Boolean); }
   else q=[...dueList(),...newList()];
   SQ=q.map(x=>x.k); SI=0; flipped=false; hinted=false; sDone=0; sTotal=SQ.length;
   renderStudy();
@@ -1850,21 +1853,34 @@ function penalize(k){fApply(k,1); card(k).d=Date.now(); card(k).t=today(); markS
 function nextQ(){Q.i++;Q.answered=false;renderQ()}
 
 /* ---------- list ---------- */
-let lf={lv:'all',st:'all',g:'none'};
+let lf={lv:'all',st:'all',g:'none',ans:'all'};
+const ANS_LABEL={1:'몰라요',2:'애매해요',3:'알아요',4:'쉬워요'};
+const lastAns=k=>{const c=card(k); return c&&c.g?c.g:0};
 const cellHTML=x=>`<button class="cell${isFav(x.k)?' faved':''}" data-k="${x.k}" data-s="${isDue(x.k)?'due':status(x.k)}" title="${esc(x.hun)}">${x.k}</button>`;
 function renderList(){
-  let a=K.filter(x=>(lf.lv==='all'||x.lv===+lf.lv)&&(lf.st==='all'||(lf.st==='due'?isDue(x.k):status(x.k)===lf.st)));
+  const dueMode=lf.st==='due';
+  let a=K.filter(x=>(lf.lv==='all'||x.lv===+lf.lv)&&(lf.st==='all'||(dueMode?isDue(x.k):status(x.k)===lf.st)));
+  if(dueMode&&lf.ans!=='all') a=a.filter(x=>String(lastAns(x.k))===lf.ans);
   const c=s=>K.filter(x=>s==='due'?isDue(x.k):status(x.k)===s).length;
+  const dueLv=K.filter(x=>isDue(x.k)&&(lf.lv==='all'||x.lv===+lf.lv));
+  const ca=g=>dueLv.filter(x=>g==='all'||String(lastAns(x.k))===g).length;
+  const studyBtn=(keys,label)=>keys.length?`<button class="btn primary" data-study="${keys.join(',')}">${label} 복습하기 (${keys.length}장)</button>`:'';
+  const byLevel=arr=>[5,4,3,2,1].map(l=>({l,items:arr.filter(x=>x.lv===l)})).filter(o=>o.items.length);
   $('#v-list').innerHTML=`<div class="panel stack">
     <div class="chips" id="fl">${[['all','전체'],['5','N5'],['4','N4'],['3','N3'],['2','N2'],['1','N1']].map(([k,v])=>`<button class="chip" data-v="${k}" aria-pressed="${lf.lv===k}">${v}</button>`).join('')}</div>
     <div class="chips" id="fs">${[['all','모두'],['new',`안 배움 ${c('new')}`],['learn',`학습 중 ${c('learn')}`],['master',`외움 ${c('master')}`],['due',`복습 대기 ${c('due')}`]].map(([k,v])=>`<button class="chip" data-v="${k}" aria-pressed="${lf.st===k}">${v}</button>`).join('')}</div>
+    ${dueMode?`<div class="chips" id="fa">${[['all','마지막 답: 모두'],['1','몰라요'],['2','애매해요'],['3','알아요'],['4','쉬워요'],['0','기록 없음']].map(([k,v])=>(k==='0'&&!ca('0'))?'':`<button class="chip" data-v="${k}" aria-pressed="${lf.ans===k}">${v} ${ca(k)}</button>`).join('')}</div>`:''}
     <div class="chips" id="fg">${[['none','한 번에 보기'],['rad','부수별로 모아 보기']].map(([k,v])=>`<button class="chip" data-v="${k}" aria-pressed="${lf.g===k}">${v}</button>`).join('')}</div>
-    ${!a.length?'<div style="color:var(--muted)">해당하는 한자가 없어요.</div>':lf.g==='rad'?groupHTML(a):`<div class="grid">${a.map(cellHTML).join('')}</div>`}
+    ${!a.length?'<div style="color:var(--muted)">해당하는 한자가 없어요.</div>':
+      dueMode&&lf.g!=='rad'?`<div class="row" style="justify-content:flex-end">${studyBtn(a.map(x=>x.k),'전체')}</div>`+byLevel(a).map(o=>`<div class="radgroup"><h3><span class="lvtag">N${o.l}</span><small>${o.items.length}자</small>${o.items.length>1&&byLevel(a).length>1?`<button class="btn small" data-study="${o.items.map(x=>x.k).join(',')}">N${o.l}만 복습</button>`:''}</h3><div class="grid">${o.items.map(cellHTML).join('')}</div></div>`).join(''):
+      lf.g==='rad'?groupHTML(a):`<div class="grid">${a.map(cellHTML).join('')}</div>`}
     <div class="legend"><span><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>학습 중</span><span><i style="background:var(--seal-soft);border:1px solid var(--seal)"></i>외움</span><span><i style="background:var(--warn);border-radius:50%"></i>복습 대기</span></div>
   </div>`;
   document.querySelectorAll('#fl .chip').forEach(b=>b.onclick=()=>{lf.lv=b.dataset.v;renderList()});
   document.querySelectorAll('#fg .chip').forEach(b=>b.onclick=()=>{lf.g=b.dataset.v;renderList()});
   document.querySelectorAll('#fs .chip').forEach(b=>b.onclick=()=>{lf.st=b.dataset.v;renderList()});
+  document.querySelectorAll('#fa .chip').forEach(b=>b.onclick=()=>{lf.ans=b.dataset.v;renderList()});
+  document.querySelectorAll('#v-list [data-study]').forEach(b=>b.onclick=()=>{ const keys=b.dataset.study.split(',').filter(Boolean); if(keys.length) go('study',{keys}); });
   document.querySelectorAll('#v-list .cell').forEach(b=>b.onclick=()=>openDetail(b.dataset.k));
 }
 
