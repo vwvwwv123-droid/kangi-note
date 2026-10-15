@@ -28,7 +28,7 @@ async function sentSince(uid: string, kind: string, since: number) {
 }
 async function log(uid: string, kind: string, n: number) { await SB.from("notif_log").insert({ user_id: uid, kind, n }); }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.headers.get("x-cron-key") !== Deno.env.get("CRON_KEY")) return new Response("forbidden", { status: 403 });
   let body: any = {}; try { body = await req.json(); } catch { /* empty */ }
   const now = Date.now();
@@ -53,10 +53,10 @@ Deno.serve(async (req) => {
   const t8 = kst8Today(now), t8prev = t8 - DAY;
   const is8 = hh === 8 && mm <= 2;              // 08:00~08:02 (크론 지연 여유), 로그로 중복 방지
   const inWindow = (p: any) => { const ls = p.last_seen ? Date.parse(p.last_seen) : 0; return ls && now - ls >= 10 * MIN && now - ls < 12 * MIN; };
-  const targets = (profs || []).filter(p => is8 || inWindow(p));
+  const targets = ((profs || []) as any[]).filter((p: any) => is8 || inWindow(p));
   if (!targets.length) return Response.json({ ok: true, users: uids.length, sent: 0 });
-  const { data: progs } = await SB.from("progress").select("user_id,state").in("user_id", targets.map(p => p.id));
-  const prog: Record<string, any> = {}; for (const r of progs || []) prog[r.user_id] = r.state || {};
+  const { data: progs } = await SB.from("progress").select("user_id,state").in("user_id", targets.map((p: any) => p.id));
+  const prog: Record<string, any> = {}; for (const r of (progs || []) as any[]) prog[r.user_id] = r.state || {};
   let sent = 0;
 
   for (const p of targets) {
