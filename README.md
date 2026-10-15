@@ -14,7 +14,8 @@
 - URL https://qorknbibcxgunaoehhew.supabase.co, 앱에는 공개 anon 키만 들어감.
 - 테이블: profiles(닉네임 고유·role·guided·stats·learned·last_seen), progress(학습 상태 jsonb), events(login/review/quiz/write), daily_activity(사용자·날짜별 학습 시간/복습/활동, KST).
 - RLS: 본인 것만 읽기/쓰기, 관리자(role=admin)는 전체 읽기. 첫 가입자가 자동 관리자. 사용자가 자기 role 못 바꿈(트리거).
-- RPC: log_activity(시간·복습 누적), name_taken(닉네임 중복 확인), is_admin().
+- RPC: log_activity(시간·복습 누적), name_taken(닉네임 중복 확인), is_admin(), email_banned(가입 전 차단 확인), admin_delete_user(관리자 전용 삭제).
+- 사용자 삭제(v19, 2026-10-16): 관리자가 사용자 분석 표에서 삭제 → 기록 전부 삭제 + 이메일이 banned_emails에 등록되어 재가입 불가(auth.users 트리거로 차단). 관리자 자신·다른 관리자는 삭제 불가. 차단 해제는 banned_emails에서 행 삭제. SQL: supabase/2026-10-16_admin_delete_user.sql (SQL Editor에서 1회 실행 필요).
 - 서버 연결 안 되면(예: Claude 아티팩트 미리보기에서 외부 서버 차단) 자동으로 "이 기기 모드"(로컬 계정)로 동작.
 - 이메일 인증: 2026-10-16 Confirm email 끔(가입 즉시 로그인). Site URL은 https://vwvwwv123-droid.github.io/kangi-note/ 로 설정돼 있음.
 - 관리자: 서버 첫 가입자(2026-10-16 폰에서 가입한 계정)가 자동 관리자 — 이름 메뉴에 '사용자 분석' 보임.

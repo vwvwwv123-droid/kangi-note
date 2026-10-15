@@ -349,7 +349,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .af input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
 .auth-err{min-height:18px;color:var(--seal);font-size:13px}
 .auth-go{width:100%;padding:12px;font-size:15px}
-.auth-link{display:block;margin:10px auto 0;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer} .auth-foot{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.5}
+.an-act{white-space:nowrap} .an-del{border:1px solid var(--line);background:var(--paper);color:var(--seal);font-size:12px;padding:3px 8px;border-radius:6px;cursor:pointer;margin-left:4px} .an-del:disabled{opacity:.5} .an-confirm{font-size:12px;color:var(--muted);margin-right:4px} .auth-link{display:block;margin:10px auto 0;border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer} .auth-foot{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.5}
 .userbox{position:relative;display:flex;align-items:center;gap:10px}
 .user-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:5px 12px 5px 6px;cursor:pointer;font-weight:600;font-size:13px}
 .user-chip .av{width:24px;height:24px;border-radius:50%;background:#f3c94b;display:grid;place-items:center;font-size:13px}
@@ -1293,7 +1293,8 @@ const Auth={
   current(){ return ACC.session&&ACC.users[ACC.session]||null },
   async signUp(email,pw){
     email=email.trim().toLowerCase();
-    if(cloudOn()){ const c=await sb(); const {data,error}=await c.auth.signUp({email,password:pw}); if(error) throw new Error(cloudMsg(error)); if(!data.session) throw new Error('가입 확인 메일을 보냈어요 📮 메일의 링크를 누른 뒤 여기서 로그인해 주세요.'); const u=this._local(data.user.id,email,true); await cloudPullProfile(u); return u; }
+    if(cloudOn()){ const c=await sb(); try{ const {data:banned}=await c.rpc('email_banned',{p_email:email}); if(banned) throw new Error('탈퇴 처리된 이메일이라 다시 가입할 수 없어요.'); }catch(x){ if(/탈퇴/.test(x.message)) throw x; }
+      const {data,error}=await c.auth.signUp({email,password:pw}); if(error) throw new Error(cloudMsg(error)); if(!data.session) throw new Error('가입 확인 메일을 보냈어요 📮 메일의 링크를 누른 뒤 여기서 로그인해 주세요.'); const u=this._local(data.user.id,email,true); await cloudPullProfile(u); return u; }
     if(Object.values(ACC.users).some(u=>u.email===email&&!u.cloud)) throw new Error('이미 가입된 이메일이에요. 로그인해 주세요.');
     const uid='u'+rid(), salt=rid();
     ACC.users[uid]={uid,email,salt,pw:await hashPw(pw,salt),name:'',created:Date.now(),last:Date.now(),role:Object.values(ACC.users).some(x=>!x.cloud)?'user':'admin',stats:newStats(),guided:false};
@@ -1312,7 +1313,7 @@ const Auth={
   },
   async signOut(){ tickTime(); await flushActivity(); saveAcc(); if(cloudOn()){try{await (await sb()).auth.signOut()}catch(e){}} ACC.session=null; saveAcc(); }
 };
-function cloudMsg(e){ const m=(e&&e.message)||''; if(/Email not confirmed/i.test(m)) return '아직 메일 인증 전이에요. 받은 메일의 링크를 먼저 눌러 주세요.'; if(/rate limit|too many/i.test(m)) return '잠깐 요청이 너무 많았어요. 1분 뒤 다시 시도해 주세요.'; if(/Failed to fetch|NetworkError/i.test(m)) return '서버에 연결할 수 없어요. 인터넷을 확인해 주세요.'; if(/Invalid login/i.test(m)) return '이메일 또는 비밀번호가 맞지 않아요.'; if(/already registered/i.test(m)) return '이미 가입된 이메일이에요. 로그인해 주세요.'; if(/Password/i.test(m)) return '비밀번호는 6자 이상으로 해 주세요.'; return '서버 오류: '+m; }
+function cloudMsg(e){ const m=(e&&e.message)||''; if(/Email not confirmed/i.test(m)) return '아직 메일 인증 전이에요. 받은 메일의 링크를 먼저 눌러 주세요.'; if(/rate limit|too many/i.test(m)) return '잠깐 요청이 너무 많았어요. 1분 뒤 다시 시도해 주세요.'; if(/Failed to fetch|NetworkError/i.test(m)) return '서버에 연결할 수 없어요. 인터넷을 확인해 주세요.'; if(/Invalid login/i.test(m)) return '이메일 또는 비밀번호가 맞지 않아요.'; if(/EMAIL_BANNED|Database error saving new user/i.test(m)) return '탈퇴 처리된 이메일이라 다시 가입할 수 없어요.'; if(/already registered/i.test(m)) return '이미 가입된 이메일이에요. 로그인해 주세요.'; if(/Password/i.test(m)) return '비밀번호는 6자 이상으로 해 주세요.'; return '서버 오류: '+m; }
 async function cloudPullProfile(u){ try{ const c=await sb(); const {data}=await c.from('profiles').select('*').eq('id',u.uid).maybeSingle(); if(data){ u.name=data.name||u.name; u.role=data.role||u.role; u.created=Date.parse(data.created_at)||u.created; if(data.stats) u.stats=Object.assign(newStats(),data.stats); u.guided=!!data.guided; u.last=Date.parse(data.last_seen)||u.last; u.email=data.email||u.email; saveAcc(); } }catch(e){} }
 let profTimer=null;
 function cloudPushProfile(){ if(!cloudOn()) return; clearTimeout(profTimer); profTimer=setTimeout(async()=>{ const u=Auth.current(); if(!u) return; try{ const c=await sb(); const st=Object.assign({},u.stats); delete st.daily; await c.from('profiles').update({last_seen:new Date(u.last).toISOString(),stats:st,guided:!!u.guided,learned:Object.keys(S.cards||{}).length}).eq('id',u.uid); }catch(e){} },1500); }
@@ -1554,13 +1555,22 @@ async function openStats(mine){
       <div class="an-tiles"><div><b>${list.length}</b><span>가입자</span></div><div><b>${active(t0)}</b><span>오늘 접속</span></div><div><b>${list.filter(u=>(u.last||0)>=wk).length}</b><span>최근 7일 활성</span></div><div><b>${fmtMs(totMs)}</b><span>총 학습 시간</span></div></div>
       <h3 class="an-h">최근 14일 일별 접속자 수</h3>${barChart(days,days.map(active),'접속자')}
       <h3 class="an-h">사용자별 현황</h3>
-      <div class="an-tablewrap"><table class="an-table"><thead><tr><th>닉네임</th><th>가입일</th><th>마지막 접속</th><th>접속</th><th>학습 시간</th><th>공부한 한자</th><th>복습</th><th>정답률</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td>${esc(r.u.name||'(이름 없음)')}${r.u.role==='admin'?' <span class="tag">관리자</span>':''}<small>${esc(r.u.email||'')}</small></td><td>${fmtDate(r.u.created)}</td><td>${fmtDate(r.u.last)}</td><td>${r.st.logins}</td><td>${fmtMs(r.st.ms)}</td><td>${r.L.n}</td><td>${r.st.reviews}</td><td>${r.acc}</td></tr>`).join('')}
+      <div class="an-tablewrap"><table class="an-table"><thead><tr><th>닉네임</th><th>가입일</th><th>마지막 접속</th><th>접속</th><th>학습 시간</th><th>공부한 한자</th><th>복습</th><th>정답률</th>${cloudOn()?'<th></th>':''}</tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${esc(r.u.name||'(이름 없음)')}${r.u.role==='admin'?' <span class="tag">관리자</span>':''}<small>${esc(r.u.email||'')}</small></td><td>${fmtDate(r.u.created)}</td><td>${fmtDate(r.u.last)}</td><td>${r.st.logins}</td><td>${fmtMs(r.st.ms)}</td><td>${r.L.n}</td><td>${r.st.reviews}</td><td>${r.acc}</td>${cloudOn()?`<td class="an-act">${(r.u.uid!==me.uid&&r.u.role!=='admin')?`<button type="button" class="an-del" data-uid="${esc(r.u.uid)}" data-name="${esc(r.u.name||r.u.email||'')}">삭제</button>`:''}</td>`:''}</tr>`).join('')}
       </tbody></table></div>
       <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" id="anCsv">CSV로 복사</button></div>`;
   }
   $('#statsBody').innerHTML=html+`<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="anClose">닫기</button></div>`;
   $('#anClose').onclick=()=>d.close();
+  $('#statsBody').querySelectorAll('.an-del').forEach(b=>b.onclick=()=>{
+    const td=b.parentElement, uid=b.dataset.uid, nm=b.dataset.name;
+    td.innerHTML=`<span class="an-confirm">${esc(nm)} 삭제? 기록이 모두 지워지고 이 이메일은 다시 가입 못 해요.</span><button type="button" class="an-del an-del-yes">정말 삭제</button><button type="button" class="an-del an-del-no">취소</button>`;
+    td.querySelector('.an-del-no').onclick=()=>openStats(false);
+    td.querySelector('.an-del-yes').onclick=async ev=>{ const y=ev.currentTarget; y.disabled=true; y.textContent='삭제 중…';
+      try{ const c=await sb(); const {error}=await c.rpc('admin_delete_user',{p_uid:uid}); if(error) throw error; toast(`${nm} 계정을 삭제했어.`); openStats(false); }
+      catch(x){ const m=(x&&x.message)||''; td.innerHTML=`<span class="an-confirm" style="color:var(--seal)">${/NOT_ADMIN/.test(m)?'관리자만 할 수 있어요.':/CANNOT_DELETE_SELF/.test(m)?'자기 계정은 삭제할 수 없어요.':/function|does not exist/i.test(m)?'서버에 삭제 기능(admin_delete_user)이 아직 없어요.':'삭제하지 못했어요. '+esc(m)}</span>`; }
+    };
+  });
   const cb=$('#anCsv'); if(cb) cb.onclick=async()=>{ const csv=['닉네임,이메일,가입일,마지막접속,접속횟수,학습시간(분),공부한한자,복습수,정답률'].concat(rows.map(r=>[r.u.name,r.u.email,new Date(r.u.created).toISOString(),r.u.last?new Date(r.u.last).toISOString():'',r.st.logins,Math.round(r.st.ms/60000),r.L.n,r.st.reviews,r.acc].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','))).join('\n');
     try{ await navigator.clipboard.writeText(csv); cb.textContent='복사했어요 ✓'; }catch(e){ cb.textContent='복사 실패'; } };
 }
