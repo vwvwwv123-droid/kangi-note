@@ -120,6 +120,8 @@ select{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--l
 .cell[data-s="learn"]{background:var(--accent-soft);border-color:var(--accent)}
 .cell[data-s="master"]{background:var(--seal-soft);border-color:var(--seal);color:var(--seal)}
 .cell[data-s="due"]::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--warn)}
+nav button{position:relative}
+.nbadge{position:absolute;top:2px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ff7a1a;color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center;box-sizing:border-box}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--paper);color:var(--muted);border-radius:99px;padding:5px 12px;cursor:pointer;font-size:13px}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
@@ -417,7 +419,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
         <button id="menuGuide" role="menuitem">강숙이의 사용 설명</button>
         <button id="menuMine" role="menuitem">내 학습 기록</button>
         <button id="menuStats" role="menuitem" hidden>사용자 분석 (관리자)</button>
-        <button id="menuName" role="menuitem">닉네임 바꾸기</button><hr>
+        <button id="menuName" role="menuitem">닉네임 바꾸기</button>
+        <button id="menuPush" role="menuitem">복습 알림 받기</button><hr>
         <button id="menuOut" role="menuitem">로그아웃</button>
       </div></div>
   </header>
@@ -426,7 +429,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <button role="tab" data-tab="study" aria-selected="false">카드</button>
     <button role="tab" data-tab="quiz" aria-selected="false">퀴즈</button>
     <button role="tab" data-tab="write" aria-selected="false">작문</button>
-    <button role="tab" data-tab="list" aria-selected="false">목록</button>
+    <button role="tab" data-tab="list" aria-selected="false">목록<span class="nbadge" id="listBadge" hidden></span></button>
     <button role="tab" data-tab="fav" aria-selected="false">즐겨찾기</button>
   </nav>
 
@@ -815,7 +818,14 @@ function blank(){return {v:1,cards:{},settings:{newPerDay:10,levels:[5,4]},favs:
 let LS='kanji-note-v1';
 function normalizeState(){ Object.values(S.cards||{}).forEach(migrateCard); }
 let dbRef=null, saveTimer=null, writing=false, pending=false;
+function updateBadges(){
+  let n=0; try{ n=Auth.current()?dueList().length:0; }catch(e){}
+  const b=$('#listBadge'); if(b){ b.hidden=!n; b.textContent=n>99?'99+':String(n); }
+  try{ if('setAppBadge' in navigator){ n?navigator.setAppBadge(n):navigator.clearAppBadge(); } }catch(e){}
+}
+setInterval(updateBadges,60000);
 function save(){
+  updateBadges();
   S.updated=Date.now();
   const u0=S.__uid; delete S.__uid; try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){} S.__uid=u0;
   clearTimeout(saveTimer); saveTimer=setTimeout(flush,1200);
@@ -871,9 +881,10 @@ function fPreview(c,now=Date.now()){
   }
   // keep intervals ordered: 애매해요 <= 알아요 < 쉬워요
   out[2].days=Math.min(out[2].days,out[3].days); out[3].days=Math.max(out[3].days,out[2].days+(c?1:0)); out[4].days=Math.max(out[4].days,out[3].days+1);
-  for(const g of [1,2,3,4]) out[g].due=g===1?now+10*MIN:now+out[g].days*DAY;
+  for(const g of [1,2,3,4]) out[g].due=g===1?now+10*MIN:at8(now+out[g].days*DAY);
   return out;
 }
+function at8(t){ const d=new Date(t); d.setHours(8,0,0,0); return d.getTime(); } // 그날 아침 8시(기기 시간대)
 function retrNow(k){const c=card(k); if(!c) return null; return fRetr(Math.max(0,(Date.now()-c.L)/DAY),c.S);}
 function ivLabel(days){ if(days<=0) return '10분 뒤'; if(days<30) return days+'일 뒤'; if(days<365) return Math.round(days/30)+'개월 뒤'; return (days/365).toFixed(1).replace('.0','')+'년 뒤'; }
 function status(k){const c=card(k); if(!c) return 'new'; if(c.S>=MASTER_S) return 'master'; return 'learn'}
@@ -1488,7 +1499,7 @@ function enterApp(u,fresh,forceGuide){
   if(!S.__uid||S.__uid!==u.uid){ loadUserState(u.uid); S.__uid=u.uid; }
   if(!u.name) return showNickname(u);
   $('#authScreen').hidden=true; $('#authScreen').innerHTML=''; $('#app').hidden=false;
-  updUserChip();
+  updUserChip(); updateBadges();
   if(!appStarted){ appStarted=true; initSearch(); let t0='home'; try{t0=sessionStorage.getItem('kn-tab')||'home'}catch(e){} go(t0==='study'?'home':t0); }
   else { W=null; Q=null; go('home'); }
   if(fresh){ logEvent('login'); try{sessionStorage.setItem('kn-sess',u.uid)}catch(e){} }
@@ -1576,6 +1587,34 @@ async function openStats(mine){
   const cb=$('#anCsv'); if(cb) cb.onclick=async()=>{ const csv=['닉네임,이메일,가입일,마지막접속,접속횟수,학습시간(분),공부한한자,복습수,정답률'].concat(rows.map(r=>[r.u.name,r.u.email,new Date(r.u.created).toISOString(),r.u.last?new Date(r.u.last).toISOString():'',r.st.logins,Math.round(r.st.ms/60000),r.L.n,r.st.reviews,r.acc].map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','))).join('\n');
     try{ await navigator.clipboard.writeText(csv); cb.textContent='복사했어요 ✓'; }catch(e){ cb.textContent='복사 실패'; } };
 }
+/* ---------- 복습 알림 (Web Push) ---------- */
+const VAPID_PUBLIC='BLZ_k_3AjoJgg09KjJrdX5KYZOkhWtQJPkoogdgPsJTuNO2nAOa2wzJC_CGdjy1sXYl0ETo4JCSGUWqrxnI2L3Y';
+function b64ToU8(b){ const p='='.repeat((4-b.length%4)%4); const r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(r,c=>c.charCodeAt(0)); }
+const pushSupported=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window&&location.protocol==='https:';
+async function pushSub(){ try{ const r=await navigator.serviceWorker.ready; return await r.pushManager.getSubscription(); }catch(e){ return null; } }
+async function refreshPushLabel(){
+  const b=$('#menuPush'); if(!b) return;
+  if(!pushSupported()||!cloudOn()){ b.textContent='복습 알림 (이 환경에선 불가)'; b.disabled=true; return; }
+  b.disabled=false; const s=await pushSub(); b.textContent=s?'복습 알림 끄기':'복습 알림 받기';
+}
+async function togglePush(){
+  if(!pushSupported()||!cloudOn()){ toast(/iPhone|iPad/.test(navigator.userAgent)?'아이폰은 홈 화면에 추가한 앱에서만 알림을 받을 수 있어.':'이 브라우저에서는 알림을 받을 수 없어.'); return; }
+  const u=Auth.current(); if(!u) return;
+  const cur=await pushSub();
+  if(cur){ try{ await cur.unsubscribe(); const c=await sb(); await c.from('push_subscriptions').delete().eq('endpoint',cur.endpoint); }catch(e){} toast('복습 알림을 껐어.'); return; }
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted'){ toast('알림 권한이 꺼져 있어. 폰 설정에서 한자 노트 알림을 허용해 줘.'); return; }
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToU8(VAPID_PUBLIC)});
+    const j=sub.toJSON(); const c=await sb();
+    const {error}=await c.from('push_subscriptions').upsert({user_id:u.uid,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,ua:navigator.userAgent.slice(0,200),tz_offset:-new Date().getTimezoneOffset()},{onConflict:'endpoint'});
+    if(error) throw error;
+    toast('복습 알림을 켰어! 복습할 카드가 생기면 아침 8시에 알려 줄게.');
+    try{ await reg.showNotification('한자 노트',{body:'알림이 켜졌어요. 복습할 카드가 생기면 아침 8시에 알려 줄게!',icon:'./icons/icon-192.png',tag:'kn-on'}); }catch(e){}
+  }catch(e){ toast('알림 등록에 실패했어. 잠시 뒤 다시 해 줘.'); }
+}
+navigator.serviceWorker&&navigator.serviceWorker.addEventListener('message',ev=>{ if(ev.data&&ev.data.type==='open-review'){ try{ go('study'); }catch(e){} } });
 function boot(){
   const menu=$('#userMenu');
   $('#userChip').onclick=e=>{e.stopPropagation(); menu.hidden=!menu.hidden; $('#userChip').setAttribute('aria-expanded',!menu.hidden)};
@@ -1584,6 +1623,8 @@ function boot(){
   $('#menuMine').onclick=()=>{menu.hidden=true; openStats(true)};
   $('#menuStats').onclick=()=>{menu.hidden=true; openStats(false)};
   $('#menuName').onclick=()=>{menu.hidden=true; const u=Auth.current(); if(u) showNickname(u)};
+  $('#menuPush').onclick=()=>{menu.hidden=true; togglePush()};
+  $('#userChip').addEventListener('click',refreshPushLabel);
   $('#menuOut').onclick=async()=>{menu.hidden=true; await Auth.signOut(); S=blank(); S.__uid=null; dbRef=null; showAuth('login')};
   $('#authScreen').hidden=false; $('#authScreen').innerHTML=`<div class="auth-card"><div class="auth-hero">${scene('c=stand,happy,wave@165,176,1')}</div><p class="auth-sub" style="text-align:center">강숙이가 문 여는 중…</p></div>`;
   probeCloud().then(async ok=>{
