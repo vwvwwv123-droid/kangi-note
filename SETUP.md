@@ -11,7 +11,6 @@ cd kangi-note
 ```
 CLAUDE.md                 ← Claude Code가 세션마다 자동으로 읽는 지침
 docs/CHAT_HISTORY.md      ← claude.ai 대화에서 나온 결정·교훈
-docs/PROJECT_NOTES.md     ← claude.ai 프로젝트 지식 파일(README) 사본. 저장소 README.md와 같으면 삭제해도 됨
 scripts/replace_once.py   ← 정확히 1곳 치환
 scripts/check_syntax.js   ← 인라인 script 문법 검사
 scripts/find_in_app.py    ← 키워드 위치 찾기
