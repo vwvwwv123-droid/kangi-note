@@ -474,10 +474,18 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 #repDlg.ib h2{font-size:16px;margin-bottom:8px}
 #repDlg.ib .chip{padding:4px 10px;font-size:12px}
 .ib-list{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin-top:8px;max-height:min(300px,55vh);overflow:auto;overscroll-behavior:contain}
-.ib-row{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;width:100%;text-align:left;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:9px;padding:6px 10px;font:inherit;line-height:1.35;cursor:pointer}
+.ib-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:stretch;border:1px solid var(--line);background:var(--paper);border-radius:9px;overflow:hidden}
+.ib-row.on{border-color:#c92a2a;background:var(--seal-soft)}
+.ib-chk{display:grid;place-items:center;padding:0 4px 0 10px;cursor:pointer}
+.ib-chk input,.ib-all input{width:18px;height:18px;accent-color:#c92a2a;margin:0}
+.ib-open{display:grid;grid-template-columns:minmax(0,1fr);gap:1px;width:100%;min-width:0;text-align:left;border:0;background:transparent;color:var(--ink);padding:6px 10px 6px 6px;font:inherit;line-height:1.35;cursor:pointer}
+.ib-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.ib-all{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;padding-left:10px}
+.ib-bar .ib-del{margin-left:0;padding:5px 12px;font-size:13px}
+.ib-del:disabled{opacity:.4;cursor:default}
 .ib-row .rep-st{font-size:10px;padding:0 6px}
 .ib-ic{flex:none;font-size:10px;color:var(--accent);font-weight:600}
-.ib-row:active{background:var(--bg)}
+.ib-open:active{background:var(--bg)}
 .ib-top{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;color:var(--muted)}
 .ib-kind{flex:none;font-weight:600;color:var(--ink)}
 .ib-k{flex:none;font-family:var(--f-kanji);font-size:14px;color:var(--ink)}
@@ -1724,7 +1732,7 @@ function toast(t){ const el=document.createElement('div'); el.className='toast';
 /* ---------- v31 오류 신고 · 관리자 답장 ----------
    서버: supabase/2026-10-29_reports.sql (reports, report_messages, storage 'reports')
    신고는 서버 계정만. 이미지는 올리기 전에 줄여서(긴 변 1400px JPEG) 장당 약 300KB 이하. */
-const APP_VER='v35';
+const APP_VER='v36';
 const REP_KIND={kanji:'한자 정보 틀림',explain:'풀이·예문 틀림',screen:'화면 깨짐',etc:'기타'};
 const REP_ST={new:'새 신고',seen:'확인함',fixed:'수정 완료'};
 const TAB_KO={home:'오늘',study:'카드',quiz:'퀴즈',write:'작문',list:'목록',fav:'즐겨찾기'};
@@ -1857,20 +1865,41 @@ async function openInbox(filter,openId){
   }catch(x){ $('#repBody').innerHTML=`<h2>신고함 (관리자)</h2><p class="rep-note">${esc(repSetupErr(x))}</p>${ibClose}`; }
 }
 const ibWhen=t=>{const d=new Date(t);return `${d.getMonth()+1}.${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+/* v36: 체크해서 선택 삭제 · 전체 선택 */
+async function ibDelete(ids){
+  const rows=IB.all.filter(r=>ids.includes(r.id)); if(!rows.length) return false;
+  if(!confirm(`신고 ${rows.length}건을 삭제할까요?\n첨부 이미지와 메시지도 함께 지워지며 되돌릴 수 없습니다.`)) return false;
+  const c=await sb();
+  try{
+    const {data,error}=await c.from('reports').delete().in('id',rows.map(r=>r.id)).select('id'); if(error) throw error;
+    if(!data||!data.length) throw new Error('NO_DELETE');
+    const imgs=rows.filter(r=>data.some(d=>d.id===r.id)).flatMap(r=>r.images||[]);
+    if(imgs.length){ const rm=await c.storage.from('reports').remove(imgs); if(rm.error) toast('신고는 삭제했지만 첨부 이미지는 지우지 못했습니다.'); }
+    toast(`신고 ${data.length}건을 삭제했습니다.`); await openInbox(IB.filter); refreshMsgBadge(); return true;
+  }catch(x){ toast(x&&x.message==='NO_DELETE'?'삭제 권한이 서버에 아직 설정되지 않았습니다. (reports_delete.sql 실행 필요)':repSetupErr(x)); return false; }
+}
 function inboxList(){
   const all=IB.all, f=IB.filter;
   const cnt={open:all.filter(r=>r.status!=='fixed').length,fixed:all.filter(r=>r.status==='fixed').length,all:all.length};
   const list=all.filter(r=>f==='all'||(f==='fixed'?r.status==='fixed':r.status!=='fixed'));
   $('#repBody').innerHTML=`<h2>신고함 (관리자)</h2>
     <div class="rep-tools">${[['open','처리 전'],['fixed','수정 완료'],['all','전체']].map(([v,l])=>`<button type="button" class="chip" data-f="${v}" aria-pressed="${v===f}">${l} ${cnt[v]}</button>`).join('')}</div>
-    ${list.length?`<div class="ib-list">${list.map(r=>{const nm=(IB.by[r.id]||[]).length, ni=(r.images||[]).length;
-      return `<button type="button" class="ib-row" data-id="${r.id}">
+    ${list.length?`<div class="ib-bar"><label class="ib-all"><input type="checkbox" id="ibAll"> 전체 선택</label><button type="button" class="btn ib-del" id="ibDel" disabled>선택 삭제</button></div>
+    <div class="ib-list">${list.map(r=>{const nm=(IB.by[r.id]||[]).length, ni=(r.images||[]).length;
+      return `<div class="ib-row"><label class="ib-chk" aria-label="선택"><input type="checkbox" data-sel="${r.id}"></label><button type="button" class="ib-open" data-id="${r.id}">
         <span class="ib-top"><span class="rep-st ${r.status}">${REP_ST[r.status]||r.status}</span><span class="ib-kind">${esc(REP_KIND[r.kind]||r.kind)}</span>${r.kanji?`<b class="ib-k">${esc(r.kanji)}</b>`:''}${ni?`<span class="ib-ic">사진${ni}</span>`:''}${nm?`<span class="ib-ic">답${nm}</span>`:''}<span class="ib-meta">${esc(IB.nick[r.user_id]||'?')} · ${ibWhen(r.created_at)}</span></span>
         <span class="ib-body">${esc(r.body)}</span>
-      </button>`}).join('')}</div>`:'<p class="rep-note">해당하는 신고가 없습니다.</p>'}
+      </button></div>`}).join('')}</div>`:'<p class="rep-note">해당하는 신고가 없습니다.</p>'}
     ${ibClose}`;
-  $('#repBody').querySelectorAll('[data-f]').forEach(bt=>bt.onclick=()=>{ IB.filter=bt.dataset.f; inboxList(); });
-  $('#repBody').querySelectorAll('.ib-row').forEach(bt=>bt.onclick=()=>inboxDetail(+bt.dataset.id));
+  const B=$('#repBody'), boxes=[...B.querySelectorAll('[data-sel]')], del=$('#ibDel'), allBox=$('#ibAll');
+  const sync=()=>{ const n=boxes.filter(x=>x.checked).length; if(del){ del.disabled=!n; del.textContent=n?`선택 삭제 (${n})`:'선택 삭제'; }
+    if(allBox){ allBox.checked=n&&n===boxes.length; allBox.indeterminate=n>0&&n<boxes.length; }
+    boxes.forEach(x=>x.closest('.ib-row').classList.toggle('on',x.checked)); };
+  boxes.forEach(x=>x.onchange=sync);
+  if(allBox) allBox.onchange=()=>{ boxes.forEach(x=>x.checked=allBox.checked); sync(); };
+  if(del) del.onclick=async()=>{ del.disabled=true; const ok=await ibDelete(boxes.filter(x=>x.checked).map(x=>+x.dataset.sel)); if(!ok) sync(); };
+  B.querySelectorAll('[data-f]').forEach(bt=>bt.onclick=()=>{ IB.filter=bt.dataset.f; inboxList(); });
+  B.querySelectorAll('.ib-open').forEach(bt=>bt.onclick=()=>inboxDetail(+bt.dataset.id));
 }
 async function inboxDetail(id){
   const r=IB.all.find(x=>x.id===id); if(!r) return inboxList();
@@ -1895,12 +1924,7 @@ async function inboxDetail(id){
         const {error}=await c.from('report_messages').insert({report_id:r.id,user_id:r.user_id,body:t}); if(error) throw error;
         if(r.status==='new') await c.from('reports').update({status:'seen'}).eq('id',r.id);
         toast('메시지를 보냈습니다.'); await openInbox(IB.filter,r.id); }
-      else if(act==='del'){
-        if(!confirm('이 신고를 삭제할까요?\n첨부 이미지와 메시지도 함께 지워지며 되돌릴 수 없습니다.')){ bt.disabled=false; return; }
-        const {data,error}=await c.from('reports').delete().eq('id',r.id).select('id'); if(error) throw error;
-        if(!data||!data.length) throw new Error('NO_DELETE');
-        if((r.images||[]).length){ const rm=await c.storage.from('reports').remove(r.images); if(rm.error) toast('신고는 삭제했지만 첨부 이미지는 지우지 못했습니다.'); }
-        toast('신고를 삭제했습니다.'); await openInbox(IB.filter); }
+      else if(act==='del'){ if(!await ibDelete([r.id])) bt.disabled=false; return; }
       else { const {error}=await c.from('reports').update({status:act}).eq('id',r.id); if(error) throw error; await openInbox(IB.filter,r.id); }
       refreshMsgBadge();
     }catch(x){ bt.disabled=false; toast(x&&x.message==='NO_DELETE'?'삭제 권한이 서버에 아직 설정되지 않았습니다. (reports_delete.sql 실행 필요)':repSetupErr(x)); }
