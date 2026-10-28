@@ -430,6 +430,38 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .an-table td small{display:block;color:var(--muted);font-size:11px}
 .an-table .tag{font-size:10px;background:var(--seal-soft);color:var(--seal);border-radius:6px;padding:1px 5px}
 .an-load{padding:30px;text-align:center;color:var(--muted)}
+/* v30: 로그인 입력칸이 카드 밖으로 나가지 않게 (폰 브라우저는 input 최소 폭을 크게 잡음) */
+.auth-form,.af{grid-template-columns:minmax(0,1fr)}
+.af input{width:100%;min-width:0}
+#sres:empty{display:none}
+/* v30: 휴대폰에서 여백·글씨 약 15% 축소. 입력칸 글씨는 16px 유지(아이폰 확대 방지) */
+@media (max-width:520px){
+  body{font-size:14px;padding-inline:12px;padding-block:0 28px}
+  header{padding-block:10px 4px;gap:8px}
+  .brand b{font-size:23px}
+  .brand span{font-size:12px}
+  nav{margin-block:4px 10px}
+  nav button{padding-block:6px;font-size:13px}
+  .stack{gap:10px}
+  .panel{padding:14px}
+  .big{font-size:28px}
+  .big small{font-size:13px}
+  h2{font-size:16px}
+  .btn{padding:8px 14px}
+  .today{gap:10px}
+  #authScreen{padding:12px}
+  .auth-card{padding:14px 16px 16px;border-radius:16px}
+  .auth-hero{margin:-2px -4px 10px}
+  .auth-hero svg{max-height:150px}
+  .auth-title{font-size:18px;margin-bottom:4px}
+  .auth-sub{font-size:13px;margin-bottom:10px}
+  .auth-tabs{margin-bottom:10px}
+  .auth-tabs button{padding:7px}
+  .auth-form{gap:8px}
+  .af input{padding:9px 11px}
+  .auth-go{padding:10px}
+  .auth-foot{margin-top:10px}
+}
 </style>
 
 <div id="authScreen" hidden></div>
