@@ -469,6 +469,18 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .rep-send textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%;min-width:0;resize:vertical}
 .rep-tools{display:flex;gap:6px;flex-wrap:wrap}
 .rep-head .tag{letter-spacing:0}
+/* v33: 알림 띠 */
+.alerts{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+.alerts[hidden]{display:none}
+.alert-bar{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:12px;padding:12px 14px;font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.alert-bar.due{background:#d9480f}
+.alert-bar.msg,.alert-bar.inbox{background:#c92a2a}
+.alert-bar:active{transform:translateY(1px)}
+.al-dot{width:8px;height:8px;border-radius:50%;background:#fff;flex:none;animation:alpulse 1.6s ease-in-out infinite}
+.al-t{flex:1;min-width:0;word-break:keep-all}
+.al-go{flex:none;font-size:13px;white-space:nowrap;background:rgba(255,255,255,.2);border-radius:99px;padding:3px 10px}
+@keyframes alpulse{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.al-dot{animation:none}}
 /* v30: 휴대폰에서 여백·글씨 약 15% 축소. 입력칸 글씨는 16px 유지(아이폰 확대 방지) */
 @media (max-width:520px){
   body{font-size:14px;padding-inline:12px;padding-block:0 28px}
@@ -526,7 +538,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <button role="tab" data-tab="fav" aria-selected="false">즐겨찾기</button>
   </nav>
 
-  <section id="v-home" class="stack"><div id="homeSearch"></div><div id="homeMain" class="stack"></div></section>
+  <section id="v-home" class="stack"><div id="homeAlerts" class="alerts" hidden></div><div id="homeSearch"></div><div id="homeMain" class="stack"></div></section>
   <section id="v-study" hidden></section>
   <section id="v-quiz" hidden></section>
   <section id="v-write" class="stack" hidden></section>
@@ -1695,7 +1707,7 @@ function toast(t){ const el=document.createElement('div'); el.className='toast';
 /* ---------- v31 오류 신고 · 관리자 답장 ----------
    서버: supabase/2026-10-29_reports.sql (reports, report_messages, storage 'reports')
    신고는 서버 계정만. 이미지는 올리기 전에 줄여서(긴 변 1400px JPEG) 장당 약 300KB 이하. */
-const APP_VER='v32';
+const APP_VER='v33';
 const REP_KIND={kanji:'한자 정보 틀림',explain:'풀이·예문 틀림',screen:'화면 깨짐',etc:'기타'};
 const REP_ST={new:'새 신고',seen:'확인함',fixed:'수정 완료'};
 const TAB_KO={home:'오늘',study:'카드',quiz:'퀴즈',write:'작문',list:'목록',fav:'즐겨찾기'};
@@ -1767,13 +1779,27 @@ function drawThumbs(){
   el.innerHTML=REP_FILES.map((b,i)=>`<span class="rep-th"><img src="${URL.createObjectURL(b)}" alt="첨부 ${i+1}"><button type="button" data-del="${i}" aria-label="첨부 ${i+1} 빼기">×</button></span>`).join('');
   el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ REP_FILES.splice(+b.dataset.del,1); drawThumbs(); });
 }
+/* v33: 오늘 화면 맨 위 알림 띠 — 새 답장(빨강) · 새 신고(관리자, 빨강) · 복습 대기(주황). 누르면 바로 이동 */
+let MSG_N=0, NEWREP_N=0;
+function drawAlerts(){
+  const el=$('#homeAlerts'); if(!el) return;
+  const due=Auth.current()?dueList().length:0, a=[];
+  if(MSG_N) a.push(['msg',`관리자 답장 ${MSG_N}건이 도착했습니다`,'보기']);
+  if(NEWREP_N) a.push(['inbox',`새 신고 ${NEWREP_N}건이 있습니다`,'신고함']);
+  if(due) a.push(['due',`복습할 한자 ${due}장이 있습니다`,'바로 복습']);
+  el.hidden=!a.length;
+  el.innerHTML=a.map(([t,m,g])=>`<button type="button" class="alert-bar ${t}" data-al="${t}"><span class="al-dot" aria-hidden="true"></span><span class="al-t">${m}</span><span class="al-go">${g} ›</span></button>`).join('');
+  el.querySelectorAll('[data-al]').forEach(x=>x.onclick=()=>{ const t=x.dataset.al;
+    if(t==='msg') openMyReports(); else if(t==='inbox') openInbox('open'); else go('study',{keys:dueList().map(c=>c.k)}); });
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden||!Auth.current()||$('#app').hidden) return; refreshMsgBadge(); });
 async function refreshMsgBadge(){
   const b=$('#msgBadge'), u=Auth.current(); if(!b||!u) return; let n=0, r=0;
   if(repOnline()){ try{ const c=await sb(), id=await myId(c);
     const q1=await c.from('report_messages').select('id',{count:'exact',head:true}).eq('user_id',id).is('seen_at',null); n=q1.error?0:(q1.count||0);
     if(u.role==='admin'){ const q2=await c.from('reports').select('id',{count:'exact',head:true}).eq('status','new'); r=q2.error?0:(q2.count||0); }
   }catch(_){} }
-  b.hidden=!(n+r); b.textContent=n+r;
+  b.hidden=!(n+r); b.textContent=n+r; MSG_N=n; NEWREP_N=r; drawAlerts();
   $('#menuMyRep').textContent=n?`내 신고·답장 (새 답장 ${n})`:'내 신고·답장';
   $('#menuInbox').textContent=r?`신고함 (관리자 · 새 ${r})`:'신고함 (관리자)';
 }
@@ -2001,7 +2027,7 @@ function renderHome(){
   ${dailyHTML()}`;
   $('#goStudy').onclick=openSetup;
   $('#goExtra').onclick=()=>go('study','extra');
-  tickDaily();
+  tickDaily(); drawAlerts();
 }
 /* ---------- study setup (opens from 학습 시작) ---------- */
 function setupHTML(){

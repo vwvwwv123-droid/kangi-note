@@ -25,6 +25,7 @@
 - 사용자: 이름 메뉴 「내 신고·답장」 — 내 신고와 관리자 메시지(일방향, 답장 불가). 새 메시지가 있으면 이름 칩에 숫자 배지, 열면 읽음 처리. 관리자는 새 신고 수도 배지에 합산.
 - 서버: `supabase/2026-10-29_reports.sql` (reports, report_messages, mark_report_messages_seen(), storage 버킷 reports — 비공개·장당 1MB·본인 폴더만 업로드·본인/관리자만 읽기). SQL Editor에서 1회 실행 필요.
 - 푸시 알림으로 답장 알리기는 아직 없음(앱 안에서만).
+- v33 알림 띠: 오늘 화면 맨 위(검색창 위)에 눈에 띄는 띠 — 새 답장(빨강, 「보기」→내 신고·답장), 새 신고(관리자, 빨강, 「신고함」), 복습 대기(주황, 「바로 복습」→복습 대기 카드만 학습). 처리하면 사라짐. 앱으로 돌아올 때(visibilitychange) 답장·신고 수 다시 확인. 흰 점이 깜빡임(움직임 줄이기 설정이면 멈춤).
 
 ## 서버 (Supabase) — v17
 - 프로젝트: kanji-note (ref qorknbibcxgunaoehhew, 서울 ap-northeast-2, 무료 플랜, org vwvwwv123@gmail.com's Org)
