@@ -1174,7 +1174,7 @@ function openDetail(k){
   const x=BY[k], c=card(k);
   const st={new:'아직 안 배움',learn:'학습 중',master:'외움'}[status(k)];
   const due=c?(c.d<=Date.now()?'지금 복습':new Date(c.d).toLocaleDateString('ko-KR',{month:'short',day:'numeric'})+' 복습')+` · 기억률 ${Math.round(retrNow(k)*100)}%`:'';
-  $('#dlgBody').innerHTML=`<div class="kwrap" style="margin-top:0"><div class="detail-k">${x.k}</div>${soHTML(x.k,"78px")}</div><div class="meta">${favBtn(x.k,true)}${repBtn(x.k)}<span class="tag">N${x.lv}</span><span>${st}</span>${due?`<span>${due}</span>`:''}${c?`<span>틀린 횟수 ${c.w}</span>`:''}</div>${backHTML(x)}`;
+  $('#dlgBody').innerHTML=`<div class="kwrap" style="margin-top:0"><div class="detail-k">${x.k}</div>${soHTML(x.k,"78px")}</div><div class="meta">${favBtn(x.k,true)}<span class="tag">N${x.lv}</span><span>${st}</span>${due?`<span>${due}</span>`:''}${c?`<span>틀린 횟수 ${c.w}</span>`:''}</div>${backHTML(x)}`;
   $('#dlg').showModal();
 }
 $('#dlgClose').onclick=()=>$('#dlg').close();
@@ -1695,15 +1695,14 @@ function toast(t){ const el=document.createElement('div'); el.className='toast';
 /* ---------- v31 오류 신고 · 관리자 답장 ----------
    서버: supabase/2026-10-29_reports.sql (reports, report_messages, storage 'reports')
    신고는 서버 계정만. 이미지는 올리기 전에 줄여서(긴 변 1400px JPEG) 장당 약 300KB 이하. */
-const APP_VER='v31';
+const APP_VER='v32';
 const REP_KIND={kanji:'한자 정보 틀림',explain:'풀이·예문 틀림',screen:'화면 깨짐',etc:'기타'};
 const REP_ST={new:'새 신고',seen:'확인함',fixed:'수정 완료'};
 const TAB_KO={home:'오늘',study:'카드',quiz:'퀴즈',write:'작문',list:'목록',fav:'즐겨찾기'};
-const repBtn=k=>`<button type="button" class="rep" data-rep="${esc(k||'')}" title="오류 신고">신고</button>`;
 const repOnline=()=>{const u=Auth.current(); return !!(cloudOn()&&u&&u.cloud)};
 const repWhen=t=>new Date(t).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
 const repDev=ua=>/iPhone|iPad/.test(ua)?'iPhone':/SamsungBrowser/.test(ua)?'삼성 인터넷':/Android/.test(ua)?'Android':'PC';
-const repSetupErr=e=>/reports|report_messages|bucket|relation|schema cache/i.test((e&&e.message)||'')?'서버에 신고 기능이 아직 설정되지 않았어요. 관리자에게 알려 주세요.':'보내지 못했어요. 잠시 뒤 다시 해 줘. ('+((e&&e.message)||'오류')+')';
+const repSetupErr=e=>/reports|report_messages|bucket|relation|schema cache/i.test((e&&e.message)||'')?'서버에 신고 기능이 아직 설정되지 않았습니다. 관리자에게 알려 주세요.':'전송하지 못했습니다. 잠시 후 다시 시도해 주세요. ('+((e&&e.message)||'오류')+')';
 let REP_FILES=[];
 document.addEventListener('click',e=>{const b=e.target.closest('[data-rep]'); if(!b) return; e.preventDefault(); e.stopPropagation(); openReport(b.dataset.rep||'');},true);
 $('#repDlg').addEventListener('click',e=>{ if(e.target.closest('[data-x]')) $('#repDlg').close(); });
@@ -1722,13 +1721,14 @@ async function shrinkImg(file,max=1400){
 }
 function openReport(k){
   const d=$('#repDlg'); REP_FILES=[];
+  if(!k&&tab==='study'&&typeof SQ!=='undefined'&&SQ[0]&&BY[SQ[0]]) k=BY[SQ[0]].k;
   if(!repOnline()){
-    $('#repBody').innerHTML=`<h2>오류 신고</h2><p class="rep-note">신고는 서버에 연결된 계정에서만 보낼 수 있어요. 인터넷을 확인하고 앱을 다시 열어 줘.</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>`;
+    $('#repBody').innerHTML=`<h2>오류 신고</h2><p class="rep-note">신고는 서버에 연결된 계정에서만 보낼 수 있습니다. 인터넷 연결을 확인하고 앱을 다시 열어 주세요.</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>`;
     if(!d.open) d.showModal(); return;
   }
   const def=k?'kanji':'screen';
   $('#repBody').innerHTML=`<h2>오류 신고</h2>
-    <p class="rep-note">${k?`<b class="rep-k">${esc(k)}</b> 한자에 대한 신고예요. `:`지금 화면(${esc(TAB_KO[tab]||tab)})에 대한 신고예요. `}이상한 점을 알려 주면 확인해서 고칠게.</p>
+    <p class="rep-note">${k?`<b class="rep-k">${esc(k)}</b> 한자에 대한 신고입니다. `:`지금 화면(${esc(TAB_KO[tab]||tab)})에 대한 신고입니다. `}이상한 점을 알려 주시면 확인 후 고치겠습니다.</p>
     <form id="repForm" class="rep-form" novalidate>
       <div class="rep-kinds" role="radiogroup" aria-label="신고 종류">${Object.entries(REP_KIND).map(([v,l])=>`<label><input type="radio" name="repKind" value="${v}"${v===def?' checked':''}>${l}</label>`).join('')}</div>
       <label class="af">내용<textarea id="repText" maxlength="2000" rows="4" placeholder="예: 뜻이 '나라'가 아니라 '국가'예요."></textarea></label>
@@ -1741,23 +1741,23 @@ function openReport(k){
   $('#repImg').onchange=async e=>{
     const err=$('#repErr'); err.textContent='';
     const fs=[...e.target.files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|heic)$/i.test(f.name)); e.target.value='';
-    for(const f of fs){ if(REP_FILES.length>=3){ err.textContent='이미지는 3장까지만 붙일 수 있어요.'; break; }
-      try{ const b=await shrinkImg(f); if(b) REP_FILES.push(b); }catch(_){ err.textContent='이 이미지는 읽지 못했어요. 다른 캡처로 해 줘.'; } }
+    for(const f of fs){ if(REP_FILES.length>=3){ err.textContent='이미지는 3장까지만 첨부할 수 있습니다.'; break; }
+      try{ const b=await shrinkImg(f); if(b) REP_FILES.push(b); }catch(_){ err.textContent='이 이미지는 읽을 수 없습니다. 다른 이미지를 선택해 주세요.'; } }
     drawThumbs();
   };
   $('#repForm').onsubmit=async e=>{
     e.preventDefault(); const err=$('#repErr'), go=$('#repGo');
     const body=$('#repText').value.trim(), kind=($('#repForm').querySelector('input[name=repKind]:checked')||{}).value||def;
-    if(!body) return err.textContent='어떤 점이 이상한지 한 줄이라도 적어 줘.';
+    if(!body) return err.textContent='어떤 점이 이상한지 내용을 적어 주세요.';
     go.disabled=true; go.textContent='보내는 중…'; err.textContent='';
     try{
-      const c=await sb(), uid=await myId(c); if(!uid) throw new Error('로그인이 풀렸어요. 다시 로그인해 줘.');
+      const c=await sb(), uid=await myId(c); if(!uid) throw new Error('로그인이 만료되었습니다. 다시 로그인해 주세요.');
       const paths=[];
       for(let i=0;i<REP_FILES.length;i++){ const p=`${uid}/${Date.now()}-${i}.jpg`;
         const {error}=await c.storage.from('reports').upload(p,REP_FILES[i],{contentType:'image/jpeg'}); if(error) throw error; paths.push(p); }
       const context={tab,ver:APP_VER,w:innerWidth,h:innerHeight,standalone:!!(matchMedia('(display-mode: standalone)').matches||navigator.standalone),ua:navigator.userAgent.slice(0,200)};
       const {error}=await c.from('reports').insert({kind,body,kanji:k||null,context,images:paths}); if(error) throw error;
-      $('#repDlg').close(); REP_FILES=[]; toast('신고 고마워! 확인해서 고칠게. 답장은 이름 메뉴의 「내 신고·답장」에서 볼 수 있어.');
+      $('#repDlg').close(); REP_FILES=[]; toast('신고해 주셔서 감사합니다. 확인 후 고치겠습니다. 답변은 이름 메뉴의 「내 신고·답장」에서 볼 수 있습니다.');
     }catch(x){ err.textContent=repSetupErr(x); go.disabled=false; go.textContent='보내기'; }
   };
 }
@@ -1781,7 +1781,7 @@ function repHead(r){ return `<span>${repWhen(r.created_at)}</span><span class="t
 function repMsgs(ms,mine){ return ms.map(m=>`<div class="rep-msg${mine&&!m.seen_at?' new':''}"><b>관리자 답장 · ${repWhen(m.created_at)}${mine&&!m.seen_at?' · 새 답장':''}</b>${esc(m.body)}</div>`).join(''); }
 async function openMyReports(){
   const d=$('#repDlg'); $('#repBody').innerHTML='<div class="an-load">불러오는 중…</div>'; if(!d.open) d.showModal();
-  if(!repOnline()){ $('#repBody').innerHTML='<h2>내 신고·답장</h2><p class="rep-note">서버에 연결된 계정에서만 볼 수 있어요.</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>'; return; }
+  if(!repOnline()){ $('#repBody').innerHTML='<h2>내 신고·답장</h2><p class="rep-note">서버에 연결된 계정에서만 볼 수 있습니다.</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>'; return; }
   try{
     const c=await sb(), id=await myId(c);
     const [a,b]=await Promise.all([
@@ -1789,7 +1789,7 @@ async function openMyReports(){
       c.from('report_messages').select('id,report_id,body,created_at,seen_at').eq('user_id',id).order('created_at')]);
     if(a.error) throw a.error; if(b.error) throw b.error;
     const by={}; (b.data||[]).forEach(m=>(by[m.report_id]=by[m.report_id]||[]).push(m));
-    $('#repBody').innerHTML=`<h2>내 신고·답장</h2>${(a.data||[]).length?`<div class="rep-list">${a.data.map(r=>`<div class="rep-item"><div class="rep-head">${repHead(r)}</div><div class="rep-body">${esc(r.body)}</div>${repMsgs(by[r.id]||[],true)}</div>`).join('')}</div>`:'<p class="rep-note">아직 보낸 신고가 없어요. 이상한 곳을 보면 빨간 「신고」 버튼을 눌러 줘.</p>'}<div class="row" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-x>닫기</button></div>`;
+    $('#repBody').innerHTML=`<h2>내 신고·답장</h2>${(a.data||[]).length?`<div class="rep-list">${a.data.map(r=>`<div class="rep-item"><div class="rep-head">${repHead(r)}</div><div class="rep-body">${esc(r.body)}</div>${repMsgs(by[r.id]||[],true)}</div>`).join('')}</div>`:'<p class="rep-note">아직 보낸 신고가 없습니다. 이상한 곳이 있으면 화면 위쪽의 빨간 「신고」 버튼을 눌러 주세요.</p>'}<div class="row" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-x>닫기</button></div>`;
     if((b.data||[]).some(m=>!m.seen_at)){ await c.rpc('mark_report_messages_seen'); refreshMsgBadge(); }
   }catch(x){ $('#repBody').innerHTML=`<h2>내 신고·답장</h2><p class="rep-note">${esc(repSetupErr(x))}</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>`; }
 }
@@ -1819,16 +1819,16 @@ async function openInbox(filter){
           ${repMsgs(by[r.id]||[],false)}
           <div class="rep-send"><textarea rows="2" maxlength="2000" placeholder="신고자에게 보낼 메시지"></textarea>
             <div class="rep-tools"><button type="button" class="btn primary" data-act="send">메시지 보내기</button>${r.status!=='seen'?'<button type="button" class="btn" data-act="seen">확인함</button>':''}${r.status!=='fixed'?'<button type="button" class="btn" data-act="fixed">수정 완료</button>':''}</div></div>
-        </div>`}).join('')}</div>`:'<p class="rep-note">여기에 해당하는 신고가 없어요.</p>'}
+        </div>`}).join('')}</div>`:'<p class="rep-note">해당하는 신고가 없습니다.</p>'}
       <div class="row" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-x>닫기</button></div>`;
     $('#repBody').querySelectorAll('[data-f]').forEach(bt=>bt.onclick=()=>openInbox(bt.dataset.f));
     $('#repBody').querySelectorAll('.rep-item[data-id]').forEach(it=>it.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=async()=>{
       const r=all.find(x=>x.id===+it.dataset.id); bt.disabled=true;
       try{
-        if(bt.dataset.act==='send'){ const t=it.querySelector('textarea').value.trim(); if(!t){ bt.disabled=false; return toast('보낼 메시지를 적어 줘.'); }
+        if(bt.dataset.act==='send'){ const t=it.querySelector('textarea').value.trim(); if(!t){ bt.disabled=false; return toast('보낼 메시지를 입력해 주세요.'); }
           const {error}=await c.from('report_messages').insert({report_id:r.id,user_id:r.user_id,body:t}); if(error) throw error;
           if(r.status==='new') await c.from('reports').update({status:'seen'}).eq('id',r.id);
-          toast('메시지를 보냈어.'); }
+          toast('메시지를 보냈습니다.'); }
         else { const {error}=await c.from('reports').update({status:bt.dataset.act}).eq('id',r.id); if(error) throw error; }
         await openInbox(filter); refreshMsgBadge();
       }catch(x){ bt.disabled=false; toast(repSetupErr(x)); }
@@ -2095,7 +2095,7 @@ function renderStudy(){
   }
   const x=BY[SQ[0]], isNew=!card(x.k);
   el.innerHTML=`<div class="stage">
-    <div class="progress"><span>${isNew?'<span class="tag">NEW</span>':'<span class="tag">복습</span>'} <span class="tag">N${x.lv}</span></span><span class="row" style="gap:8px">${repBtn(x.k)}${favBtn(x.k)}<span>남은 카드 ${SQ.length}</span></span></div>
+    <div class="progress"><span>${isNew?'<span class="tag">NEW</span>':'<span class="tag">복습</span>'} <span class="tag">N${x.lv}</span></span><span class="row" style="gap:8px">${favBtn(x.k)}<span>남은 카드 ${SQ.length}</span></span></div>
     <div class="kwrap"><div class="kanji" id="fk" title="눌러서 뒤집기">${x.k}</div>${soHTML(x.k)}</div>
     ${flipped?backHTML(x)+`<div class="rate">
         ${(()=>{const pv=fPreview(card(x.k));return [[1,'몰라요','r0'],[2,'애매해요','r1'],[3,'알아요','r2'],[4,'쉬워요','r3']].map(([g,l,cl])=>`<button class="${cl}" data-r="${g}">${l}<small>${ivLabel(pv[g].days)}</small></button>`).join('')})()}</div>`
