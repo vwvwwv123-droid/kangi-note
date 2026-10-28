@@ -18,7 +18,7 @@
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Noto+Serif+JP:wght@400;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: a single study column like a notebook page; genkō-grid ground behind the card, indigo ink accent, vermilion only for "mastered" seals */
 :root{
@@ -27,11 +27,12 @@
   --good:#2e7d4f; --good-soft:#e3f2e8; --warn:#a86a00; --warn-soft:#fbf1dc;
   --p1:#2f4a8a; --p2:#1f7a6d; --p3:#a86a00; --p4:#8a3fa0;
   --sky:#eaf2fb; --ground:#e6efdc;
-  --f-kanji:"Klee One","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-brand:"Klee One","Hiragino Mincho ProN","Yu Mincho",serif;
+--f-kanji:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho","MS PMincho",serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,monospace;
-  --f-kana:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Zen Kaku Gothic New",sans-serif;
-  --f-jp:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP",var(--f-body);
+  --f-kana:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho","MS PMincho",serif;
+  --f-jp:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho","MS PMincho",var(--f-body);
   --r:14px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -48,7 +49,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 .wrap{max-width:720px;margin:0 auto}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 10px;flex-wrap:wrap}
 .brand{display:flex;align-items:baseline;gap:10px}
-.brand b{font-family:var(--f-kanji);font-size:28px;font-weight:600;letter-spacing:.02em}
+.brand b{font-family:var(--f-brand);font-size:28px;font-weight:600;letter-spacing:.02em}
 .brand span{color:var(--muted);font-size:13px}
 .sync{font-size:12px;color:var(--muted)}
 nav{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px;margin-block:6px 18px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
@@ -351,7 +352,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .auth-hero{border-radius:14px;overflow:hidden;background:var(--sky);margin:-4px -6px 14px}
 .auth-hero svg{display:block;width:100%;height:auto}
 .auth-title{font-size:21px;margin:0 0 6px;line-height:1.35}
-.auth-title span{font-family:var(--f-kanji);color:var(--accent)}
+.auth-title span{font-family:var(--f-brand);color:var(--accent)}
 .auth-sub{margin:0 0 14px;color:var(--muted);font-size:14px}
 .auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:14px}
 .auth-tabs button{border:0;background:transparent;padding:9px;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer}
@@ -758,9 +759,9 @@ function scene(spec){
       if(o.arms==='') o.arms=undefined;
       layers.push(`<g transform="${tf}">${cat(o)}</g>`);
     } else if(lhs.startsWith('t=')){ // sign with glyph
-      layers.push(`<g transform="${tf}">${PR.sign()}<text x="0" y="-45" text-anchor="middle" font-size="26" font-family="Klee One,serif" font-weight="600" fill="${O}">${lhs.slice(2)}</text></g>`);
+      layers.push(`<g transform="${tf}">${PR.sign()}<text x="0" y="-45" text-anchor="middle" font-size="26" font-family="Noto Serif JP,Hiragino Mincho ProN,Yu Mincho,serif" font-weight="600" fill="${O}">${lhs.slice(2)}</text></g>`);
     } else if(lhs.startsWith('w=')){ // chalk text
-      layers.push(`<text x="${P.x}" y="${P.y}" text-anchor="middle" font-size="${P.s}" font-family="Klee One,serif" font-weight="600" fill="#f4f1e6">${lhs.slice(2)}</text>`);
+      layers.push(`<text x="${P.x}" y="${P.y}" text-anchor="middle" font-size="${P.s}" font-family="Noto Serif JP,Hiragino Mincho ProN,Yu Mincho,serif" font-weight="600" fill="#f4f1e6">${lhs.slice(2)}</text>`);
     } else if(lhs.startsWith('b=')){ // speech bubble
       const txt=lhs.slice(2); const w=Math.max(34,txt.length*16+16);
       layers.push(`<g transform="${tf}"><path d="M${-w/2} -44 h${w} a8 8 0 0 1 8 8 v20 a8 8 0 0 1 -8 8 h${-w/2+14} l-10 10 l-2 -10 h${-w/2+-2} a8 8 0 0 1 -8 -8 v-20 a8 8 0 0 1 8 -8z" fill="#fff" ${st}/><text x="4" y="-20" text-anchor="middle" font-size="16" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif" fill="${O}">${txt}</text></g>`);
