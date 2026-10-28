@@ -70,3 +70,11 @@ create policy reports_img_insert on storage.objects for insert to authenticated
 drop policy if exists reports_img_select on storage.objects;
 create policy reports_img_select on storage.objects for select to authenticated
   using (bucket_id = 'reports' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin()));
+
+-- 4) (v34) 관리자 삭제 — 2026-10-29_reports_delete.sql 과 같은 내용. 처음 설정할 때 함께 적용됨.
+drop policy if exists reports_delete_admin on public.reports;
+create policy reports_delete_admin on public.reports for delete to authenticated
+  using (public.is_admin());
+drop policy if exists reports_img_delete on storage.objects;
+create policy reports_img_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'reports' and public.is_admin());
