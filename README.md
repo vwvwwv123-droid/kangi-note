@@ -41,7 +41,7 @@
 - "외움" = 기억 안정도 21일 이상. 상세 화면에 현재 기억률 % 표시. 예전 박스 기록은 자동 변환.
 
 ## 글꼴 — v24 (2026-10-28)
-- 학습 화면의 한자·일본어(단어, 예문, 읽기, 퀴즈, 작문, 칠판·팻말 글자)는 JLPT 문제지와 같은 명조체: Noto Serif JP(없으면 Hiragino Mincho / Yu Mincho). CSS 변수 `--f-kanji`, `--f-jp`, `--f-kana`.
+- 학습 화면의 한자·일본어(단어, 예문, 히라가나·가타카나 읽기, 퀴즈 보기·정답 표시, 작문, 칠판·팻말 글자)는 JLPT 문제지와 같은 명조체: Noto Serif JP(없으면 Hiragino Mincho / Yu Mincho). CSS 변수 `--f-kanji`, `--f-jp`, `--f-kana`.
 - 로그인 화면 제목과 상단 로고 「漢字ノート」만 기존 Klee One 유지(`--f-brand`). 한국어 본문은 IBM Plex Sans KR 그대로.
 
 ## 탭 구성: 오늘 / 카드 / 퀴즈 / 작문 / 목록 / 즐겨찾기

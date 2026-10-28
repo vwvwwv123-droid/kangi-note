@@ -107,7 +107,7 @@ h2{font-size:17px;margin:0 0 10px;text-wrap:balance}
 .qprompt.k{font-size:clamp(90px,24vw,140px)} .qprompt.w{font-size:clamp(46px,12vw,64px)} .qprompt.m{font-family:var(--f-body);font-size:30px;font-weight:600}
 .qask{text-align:center;color:var(--muted);font-size:14px;margin-bottom:14px}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.opts button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:14px 8px;cursor:pointer;font-size:17px;min-height:56px}
+.opts button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:14px 8px;cursor:pointer;font-size:17px;min-height:56px;font-family:var(--f-jp)}
 .opts.kan button{font-family:var(--f-kanji);font-size:34px}
 .opts button.ok{background:var(--good-soft);border-color:var(--good);color:var(--good)}
 .opts button.ng{background:var(--seal-soft);border-color:var(--seal);color:var(--seal)}
@@ -1889,7 +1889,7 @@ function answer(b){
   logEvent('quiz',{k:q.x.k,t:qCfg.type,ok});
   if(ok) Q.score++; else {b.classList.add('ng'); Q.wrong.push(q.x.k); penalize(q.x.k)}
   const x=q.x;
-  $('#fb').innerHTML=`<b style="color:var(${ok?'--good':'--seal'})">${ok?'정답':'오답'}</b> · <span style="font-family:var(--f-kanji);font-size:18px">${x.k}</span> ${esc(x.hun)} · ${esc(x.on)} / ${esc(x.kun)}${q.sub?` · ${esc(q.prompt)} = ${esc(q.sub)}`:''}
+  $('#fb').innerHTML=`<b style="color:var(${ok?'--good':'--seal'})">${ok?'정답':'오답'}</b> · <span style="font-family:var(--f-kanji);font-size:18px">${x.k}</span> ${esc(x.hun)} · <span class="kana">${esc(x.on)} / ${esc(x.kun)}</span>${q.sub?` · <span style="font-family:var(--f-jp)">${esc(q.prompt)} = ${esc(q.sub)}</span>`:''}
     <div style="margin-top:10px"><button class="btn primary" id="nx">${Q.i+1<Q.items.length?'다음':'결과 보기'}</button></div>`;
   $('#nx').onclick=nextQ; $('#nx').focus();
 }
