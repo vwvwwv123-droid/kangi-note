@@ -82,6 +82,7 @@
 - 구현: 앱 이름 메뉴 '복습 알림 받기' → Web Push 구독 → push_subscriptions(endpoint, user_id, p256dh, auth). sw.js가 push 표시·클릭 시 앱 열기.
   서버: Edge Function notify (supabase/functions/notify/index.ts, web-push npm) + pg_cron 1분마다 pg_net으로 호출(x-cron-key). notif_log로 중복 방지. VAPID 공개키는 앱에, 비공개키·CRON_KEY는 Edge Secrets.
   SQL 파일(키 포함)은 git 제외(.gitignore), 사용자에게 직접 전달. 레벨 범위 설정은 서버 집계에 미반영(공부한 카드 전체 기준).
+- 2026-10-28 복구: 그동안 함수가 매 호출 500(VAPID 비공개키 형식 오류)·크론 키 불일치로 한 번도 발송 못 함. 함수가 키를 URL-safe Base64로 정규화하고 오류 이유를 응답하도록 수정·재배포, CRON_KEY 재발급(Secret·크론 헤더 동시 교체). 테스트 발송 성공. 점검: `net._http_response`의 status_code/content.
 - 제약: iPhone은 홈 화면 추가한 앱에서만 알림. 매 기기에서 '복습 알림 받기'를 눌러야 그 기기로 옴.
 
 ## 다음 할 일

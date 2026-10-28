@@ -4,8 +4,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
 const SB = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-webpush.setVapidDetails(Deno.env.get("VAPID_SUBJECT") || "mailto:vwvwwv123@gmail.com",
-  Deno.env.get("VAPID_PUBLIC_KEY")!, Deno.env.get("VAPID_PRIVATE_KEY")!);
+// 키가 일반 Base64(+,/,=)나 앞뒤 공백·따옴표가 섞여 저장돼도 web-push가 요구하는 URL-safe Base64로 맞춘다
+const b64url = (k: string) => k.trim().replace(/^["']|["']$/g, "").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+let vapidErr = "";
+try {
+  webpush.setVapidDetails(Deno.env.get("VAPID_SUBJECT") || "mailto:vwvwwv123@gmail.com",
+    b64url(Deno.env.get("VAPID_PUBLIC_KEY")!), b64url(Deno.env.get("VAPID_PRIVATE_KEY")!));
+} catch (e) { vapidErr = String((e as Error)?.message || e); }
 
 const MIN = 60_000, HOUR = 3_600_000, DAY = 86_400_000, KST = 9 * HOUR;
 const kst = (t: number) => new Date(t + KST);                 // UTC 필드로 KST 시각 읽기용
@@ -30,6 +35,12 @@ async function log(uid: string, kind: string, n: number) { await SB.from("notif_
 
 Deno.serve(async (req: Request) => {
   if (req.headers.get("x-cron-key") !== Deno.env.get("CRON_KEY")) return new Response("forbidden", { status: 403 });
+  if (vapidErr) return Response.json({ ok: false, stage: "vapid", error: vapidErr }, { status: 500 });
+  try { return await handle(req); }
+  catch (e) { return Response.json({ ok: false, stage: "run", error: String((e as Error)?.stack || e).slice(0, 800) }, { status: 500 }); }
+});
+
+async function handle(req: Request): Promise<Response> {
   let body: any = {}; try { body = await req.json(); } catch { /* empty */ }
   const now = Date.now();
 
@@ -94,4 +105,4 @@ Deno.serve(async (req: Request) => {
     }
   }
   return Response.json({ ok: true, users: uids.length, sent });
-});
+}
