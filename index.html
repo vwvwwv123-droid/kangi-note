@@ -106,6 +106,11 @@ h2{font-size:17px;margin:0 0 10px;text-wrap:balance}
 .qprompt{font-family:var(--f-kanji);text-align:center;margin:20px 0 6px;line-height:1.1}
 .qprompt.k{font-size:clamp(90px,24vw,140px)} .qprompt.w{font-size:clamp(46px,12vw,64px)} .qprompt.m{font-family:var(--f-body);font-size:30px;font-weight:600}
 .qask{text-align:center;color:var(--muted);font-size:14px;margin-bottom:14px}
+.qsent{font-family:var(--f-jp);font-size:clamp(22px,6vw,28px);line-height:2.2;text-align:center;margin:20px 0 8px}
+.qsent rt{font-size:.42em;color:var(--muted)}
+.qsent .yq-t{color:var(--seal);font-weight:700;border-bottom:3px solid var(--seal);padding:0 2px}
+.yq-tag{display:block;font-family:var(--f-body);font-size:11px;font-weight:600;color:var(--muted);margin-top:2px}
+.yq-res{font-size:16px;color:var(--ink);margin-bottom:4px}.yq-res b{font-family:var(--f-jp);font-size:20px}.yq-res .yq-tag{display:inline;margin-left:4px}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .opts button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:14px 8px;cursor:pointer;font-size:17px;min-height:56px;font-family:var(--f-jp)}
 .opts.kan button{font-family:var(--f-kanji);font-size:34px}
@@ -1907,16 +1912,17 @@ const QT={
   meaning:{name:'한자 → 훈음',ask:'이 한자의 뜻과 음은?'},
   reverse:{name:'훈음 → 한자',ask:'이 뜻의 한자는?'},
   reading:{name:'단어 → 읽기',ask:'이 단어는 어떻게 읽을까요?'},
-  build:{name:'부수 조립 → 한자',ask:'이 부품들을 합치면 어떤 한자?'}
+  build:{name:'부수 조립 → 한자',ask:'이 부품들을 합치면 어떤 한자?'},
+  yomi:{name:'음독·훈독 읽기',ask:'빨간 밑줄 한자는 이 문장에서 어떻게 읽을까요?'}
 };
 let qCfg={type:'meaning',range:'studied',n:10};
 function renderQuizSetup(){
-  const studied=Object.keys(S.cards).length;
+  const studied=Object.keys(S.cards).length, todayN=K.filter(x=>card(x.k)&&card(x.k).t===today()).length;
   $('#v-quiz').innerHTML=`<div class="panel stack">
     <h2>퀴즈</h2>
     <div class="stack" style="gap:8px"><div class="label">문제 유형</div><div class="chips" id="qt">${Object.entries(QT).map(([k,v])=>`<button class="chip" data-v="${k}" aria-pressed="${qCfg.type===k}">${v.name}</button>`).join('')}</div></div>
     <div class="stack" style="gap:8px"><div class="label">범위</div><div class="chips" id="qr">
-      ${[['studied',`배운 한자 (${studied})`],['5','N5'],['4','N4'],['3','N3'],['2','N2'],['1','N1'],['all',`전체 ${K.length}자`],['weak','자주 틀린 한자'],['fav',`즐겨찾기 (${favList().length})`]].map(([k,v])=>`<button class="chip" data-v="${k}" aria-pressed="${qCfg.range===k}">${v}</button>`).join('')}</div></div>
+      ${[['today',`오늘 외운 한자 (${todayN})`],['studied',`지금까지 외운 한자 (${studied})`],['5','N5'],['4','N4'],['3','N3'],['2','N2'],['1','N1'],['all',`전체 ${K.length}자`],['weak','자주 틀린 한자'],['fav',`즐겨찾기 (${favList().length})`]].map(([k,v])=>`<button class="chip" data-v="${k}" aria-pressed="${qCfg.range===k}">${v}</button>`).join('')}</div></div>
     <div class="stack" style="gap:8px"><div class="label">문제 수</div><div class="chips" id="qn">${[10,20,30].map(n=>`<button class="chip" data-v="${n}" aria-pressed="${qCfg.n===n}">${n}문제</button>`).join('')}</div></div>
     <div class="row"><button class="btn primary" id="qStart">시작</button><span id="qMsg" style="color:var(--muted);font-size:13px"></span></div>
     <div style="font-size:13px;color:var(--muted)">틀린 한자는 자동으로 복습 카드에 들어가요.</div>
@@ -1928,19 +1934,53 @@ function renderQuizSetup(){
 function quizPool(){
   const r=qCfg.range;
   if(r==='studied') return K.filter(x=>card(x.k));
+  if(r==='today') return K.filter(x=>card(x.k)&&card(x.k).t===today());
   if(r==='fav') return favList();
   if(r==='weak') return K.filter(x=>card(x.k)&&card(x.k).w>0).sort((a,b)=>card(b.k).w-card(a.k).w);
   if(r==='all') return K.slice();
   return K.filter(x=>x.lv===+r);
 }
 function startQuiz(){
-  let p=quizPool(); if(qCfg.type==='build') p=p.filter(x=>x.parts);
-  if(p.length<4){$('#qMsg').textContent=qCfg.range==='fav'?'즐겨찾기한 한자가 4개 이상 있어야 해요.':qCfg.range==='weak'?'아직 틀린 한자가 없어요.':'배운 한자가 4개 이상 있어야 해요. 카드부터 학습하거나 범위를 N5로 바꿔 보세요.';return}
+  let p=quizPool(); if(qCfg.type==='build') p=p.filter(x=>x.parts); if(qCfg.type==='yomi') p=p.filter(x=>yomiSents(x).length);
+  if(p.length<(qCfg.type==='yomi'?1:4)){$('#qMsg').textContent=qCfg.range==='today'?'오늘 카드로 학습한 한자가 아직 없어요. 카드부터 학습해 보세요.':qCfg.range==='fav'?'즐겨찾기한 한자가 4개 이상 있어야 해요.':qCfg.range==='weak'?'아직 틀린 한자가 없어요.':'배운 한자가 4개 이상 있어야 해요. 카드부터 학습하거나 범위를 N5로 바꿔 보세요.';return}
   const items=(qCfg.range==='weak'?p.slice(0,qCfg.n):shuffle(p).slice(0,qCfg.n));
   Q={items:shuffle(items).map(x=>makeQ(x)),i:0,score:0,wrong:[],answered:false};
   renderQ();
 }
+/* 음독·훈독 읽기: 예문 속 한자 하나를 어떻게 읽는지 고른다. 보기는 그 한자의 다른 음독·훈독 + 다른 한자 읽기. */
+const DAK={'が':'か','ぎ':'き','ぐ':'く','げ':'け','ご':'こ','ざ':'さ','じ':'し','ず':'す','ぜ':'せ','ぞ':'そ','だ':'た','ぢ':'ち','づ':'つ','で':'て','ど':'と','ば':'は','び':'ひ','ぶ':'ふ','べ':'へ','ぼ':'ほ','ぱ':'は','ぴ':'ひ','ぷ':'ふ','ぺ':'へ','ぽ':'ほ'};
+const yNorm=s=>[...s].map((c,i)=>i===0&&DAK[c]?DAK[c]:c).join('');
+const yOn=x=>(x.on||'').split('・').map(s=>s.trim()).filter(Boolean);
+const yKun=x=>uniq((x.kun||'').split('・').map(s=>s.replace(/[(（].*$/,'').replace(/[.\-]/g,'').trim()).filter(Boolean),'');
+function ySame(a,b){
+  a=yNorm(a); b=yNorm(b); if(a===b) return true;
+  // 촉음화: がく → がっ, はつ → はっ
+  return a.length===b.length&&a.slice(0,-1)===b.slice(0,-1)&&(a.endsWith('っ')||b.endsWith('っ'));
+}
+function yType(x,rd){
+  if(yOn(x).some(o=>ySame(o,rd))) return '음독';
+  if(yKun(x).some(k=>ySame(k,rd))) return '훈독';
+  // 활용형·명사형(いり, うけ, つけ)이나 오쿠리가나가 글자 쪽으로 들어온 경우(うし ← うしろ)
+  const full=(x.kun||'').split('・').map(s=>s.replace(/[()（）.\-]/g,'').trim()).filter(Boolean);
+  const r0=yNorm(rd);
+  if(full.some(f=>yNorm(f).startsWith(r0))||yKun(x).some(k=>r0.startsWith(yNorm(k)))) return '훈독';
+  return '특수 읽기';
+}
+function yomiSents(x){
+  const out=[]; (x.sg||[]).forEach((s,i)=>{ const j=s.findIndex(t=>Array.isArray(t)&&t[0]===x.k); if(j>=0&&x.ss[i]) out.push([i,j]); });
+  return out;
+}
+function makeYomiQ(x){
+  const ys=yomiSents(x), [si,ti]=ys[Math.random()*ys.length|0], seg=x.sg[si], ans=seg[ti][1];
+  const html=seg.map((t,j)=>!Array.isArray(t)?esc(t):j===ti?`<span class="yq-t">${esc(t[0])}</span>`:`<ruby>${esc(t[0])}<rt>${esc(t[1])}</rt></ruby>`).join('');
+  const own=[...yOn(x),...yKun(x)].filter(r=>!ySame(r,ans));
+  const near=shuffle(K.filter(y=>y.k!==x.k&&card(y.k)).concat(shuffle(K).slice(0,60))).flatMap(y=>[...yOn(y),...yKun(y)]).filter(r=>!ySame(r,ans)&&Math.abs(r.length-ans.length)<=1);
+  const opts=shuffle([ans,...uniq([...shuffle(own),...near],ans).slice(0,3)]);
+  const tags=opts.map(o=>o===ans||own.includes(o)?yType(x,o):'다른 한자');
+  return {x,prompt:x.ss[si][0],html,pc:'s',sub:x.ss[si][2],opts,ans,kan:false,tags,yt:yType(x,ans)};
+}
 function makeQ(x){
+  if(qCfg.type==='yomi') return makeYomiQ(x);
   const t=qCfg.type, others=shuffle(K.filter(y=>y.k!==x.k));
   if(t==='build'){
     const gl=new Set(x.parts.map(p=>p[0]));
@@ -1977,7 +2017,7 @@ function renderQ(){
   const q=Q.items[Q.i];
   el.innerHTML=`<div class="stage">
     <div class="progress"><span>${QT[qCfg.type].name}</span><span>${Q.i+1} / ${Q.items.length} · 정답 ${Q.score}</span></div>
-    ${q.pc==='b'?`<div class="qbuild">${buildHTML(q.x,false)}</div>`:`<div class="qprompt ${q.pc}">${esc(q.prompt)}</div>`}
+    ${q.pc==='b'?`<div class="qbuild">${buildHTML(q.x,false)}</div>`:q.pc==='s'?`<div class="qsent">${q.html}</div>`:`<div class="qprompt ${q.pc}">${esc(q.prompt)}</div>`}
     <div class="qask">${QT[qCfg.type].ask}${q.sub&&Q.answered?` · ${esc(q.sub)}`:''}</div>
     <div class="opts ${q.kan?'kan':''}">${q.opts.map((o,i)=>`<button data-i="${i}">${esc(o)}</button>`).join('')}</div>
     <div class="fb" id="fb"></div>
@@ -1994,6 +2034,10 @@ function answer(b){
   const x=q.x;
   $('#fb').innerHTML=`<b style="color:var(${ok?'--good':'--seal'})">${ok?'정답':'오답'}</b> · <span style="font-family:var(--f-kanji);font-size:18px">${x.k}</span> ${esc(x.hun)} · <span class="kana">${esc(x.on)} / ${esc(x.kun)}</span>${q.sub?` · <span style="font-family:var(--f-jp)">${esc(q.prompt)} = ${esc(q.sub)}</span>`:''}
     <div style="margin-top:10px"><button class="btn primary" id="nx">${Q.i+1<Q.items.length?'다음':'결과 보기'}</button></div>`;
+  if(q.tags){
+    document.querySelectorAll('.opts button').forEach((o,i)=>o.insertAdjacentHTML('beforeend',`<small class="yq-tag">${q.tags[i]}</small>`));
+    $('#fb').insertAdjacentHTML('afterbegin',`<div class="yq-res">「${x.k}」 → <b>${esc(q.ans)}</b> <span class="yq-tag">${q.yt}</span></div>`);
+  }
   $('#nx').onclick=nextQ; $('#nx').focus();
 }
 function penalize(k){fApply(k,1); card(k).d=Date.now(); card(k).t=today(); markStudied(); save()}
