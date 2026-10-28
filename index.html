@@ -434,6 +434,41 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .auth-form,.af{grid-template-columns:minmax(0,1fr)}
 .af input{width:100%;min-width:0}
 #sres:empty{display:none}
+/* v31: 오류 신고 */
+.rep{display:inline-flex;align-items:center;flex:none;border:0;background:#d93a2b;color:#fff;border-radius:6px;padding:3px 7px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
+.rep:active{transform:translateY(1px)}
+.user-chip{position:relative}
+#msgBadge{top:-7px;right:-7px}
+#repDlg{max-width:min(600px,calc(100vw - 24px));width:100%}
+#repDlg h2{margin:0 0 8px}
+.rep-note{color:var(--muted);font-size:13px;margin:0 0 12px}
+.rep-k{font-family:var(--f-kanji);font-size:18px;color:var(--ink)}
+.rep-form,.rep-list,.rep-item,.rep-send{display:grid;grid-template-columns:minmax(0,1fr)}
+.rep-form{gap:10px}
+.rep-kinds{display:flex;flex-wrap:wrap;gap:6px}
+.rep-kinds label{border:1px solid var(--line);border-radius:99px;padding:6px 11px;font-size:13px;cursor:pointer;color:var(--muted)}
+.rep-kinds input{position:absolute;opacity:0;pointer-events:none}
+.rep-kinds label:has(input:checked){background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.af textarea{font:inherit;font-weight:400;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;resize:vertical}
+.af input[type=file]{font-size:13px;padding:8px}
+.rep-thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.rep-thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block}
+.rep-th{position:relative}
+.rep-th button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink);color:var(--paper);font-size:14px;line-height:22px;padding:0;cursor:pointer}
+.rep-list{gap:10px;max-height:62vh;overflow:auto;margin-top:10px}
+.rep-item{gap:8px;border:1px solid var(--line);border-radius:12px;padding:12px}
+.rep-head{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.rep-body{white-space:pre-wrap;word-break:break-word;font-size:14px}
+.rep-ctx{font-size:11px;color:var(--muted);word-break:break-all}
+.rep-msg{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:13px;white-space:pre-wrap;word-break:break-word}
+.rep-msg b{display:block;font-size:11px;color:var(--accent);margin-bottom:2px}
+.rep-msg.new{box-shadow:inset 0 0 0 2px #d93a2b}
+.rep-st{font-size:11px;border-radius:99px;padding:1px 7px;border:1px solid currentColor}
+.rep-st.new{color:#d93a2b}.rep-st.seen{color:var(--muted)}.rep-st.fixed{color:#15803d}
+.rep-send{gap:6px}
+.rep-send textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:100%;min-width:0;resize:vertical}
+.rep-tools{display:flex;gap:6px;flex-wrap:wrap}
+.rep-head .tag{letter-spacing:0}
 /* v30: 휴대폰에서 여백·글씨 약 15% 축소. 입력칸 글씨는 16px 유지(아이폰 확대 방지) */
 @media (max-width:520px){
   body{font-size:14px;padding-inline:12px;padding-block:0 28px}
@@ -469,11 +504,14 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <header>
     <div class="brand"><b>漢字ノート</b><span id="brandCount">N5~N1</span></div>
     <div class="userbox"><div class="sync" id="sync">이 브라우저에 저장 중</div>
-      <button class="user-chip" id="userChip" aria-haspopup="menu" aria-expanded="false"><span class="av">🐱</span><span id="userName"></span></button>
+      <button type="button" class="rep" data-rep="" title="오류 신고">신고</button>
+      <button class="user-chip" id="userChip" aria-haspopup="menu" aria-expanded="false"><span class="av">🐱</span><span id="userName"></span><span class="nbadge" id="msgBadge" hidden></span></button>
       <div class="user-menu" id="userMenu" role="menu" hidden>
         <button id="menuGuide" role="menuitem">강숙이의 사용 설명</button>
         <button id="menuMine" role="menuitem">내 학습 기록</button>
+        <button id="menuMyRep" role="menuitem">내 신고·답장</button>
         <button id="menuStats" role="menuitem" hidden>사용자 분석 (관리자)</button>
+        <button id="menuInbox" role="menuitem" hidden>신고함 (관리자)</button>
         <button id="menuName" role="menuitem">닉네임 바꾸기</button>
         <button id="menuPush" role="menuitem">복습 알림 받기</button><hr>
         <button id="menuOut" role="menuitem">로그아웃</button>
@@ -500,6 +538,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 <dialog id="guideDlg"><div id="guideBody"></div></dialog>
 <dialog id="statsDlg"><div id="statsBody"></div></dialog>
 <dialog id="setupDlg"><div id="setupBody"></div></dialog>
+<dialog id="repDlg"><div id="repBody"></div></dialog>
 <dialog id="dlg"><div id="dlgBody"></div><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" id="dlgClose">닫기</button></div></dialog>
 
 <script>
@@ -1135,7 +1174,7 @@ function openDetail(k){
   const x=BY[k], c=card(k);
   const st={new:'아직 안 배움',learn:'학습 중',master:'외움'}[status(k)];
   const due=c?(c.d<=Date.now()?'지금 복습':new Date(c.d).toLocaleDateString('ko-KR',{month:'short',day:'numeric'})+' 복습')+` · 기억률 ${Math.round(retrNow(k)*100)}%`:'';
-  $('#dlgBody').innerHTML=`<div class="kwrap" style="margin-top:0"><div class="detail-k">${x.k}</div>${soHTML(x.k,"78px")}</div><div class="meta">${favBtn(x.k,true)}<span class="tag">N${x.lv}</span><span>${st}</span>${due?`<span>${due}</span>`:''}${c?`<span>틀린 횟수 ${c.w}</span>`:''}</div>${backHTML(x)}`;
+  $('#dlgBody').innerHTML=`<div class="kwrap" style="margin-top:0"><div class="detail-k">${x.k}</div>${soHTML(x.k,"78px")}</div><div class="meta">${favBtn(x.k,true)}${repBtn(x.k)}<span class="tag">N${x.lv}</span><span>${st}</span>${due?`<span>${due}</span>`:''}${c?`<span>틀린 횟수 ${c.w}</span>`:''}</div>${backHTML(x)}`;
   $('#dlg').showModal();
 }
 $('#dlgClose').onclick=()=>$('#dlg').close();
@@ -1650,8 +1689,152 @@ function enterApp(u,fresh,forceGuide){
   if(!u.guided||forceGuide) openGuide(true);
   else if(fresh) toast(`${u.name}님, 어서 와! 오늘 복습할 한자는 ${dueList().length}장이야.`);
 }
-function updUserChip(){ const u=Auth.current(); if(!u) return; $('#userName').textContent=u.name; $('#menuStats').hidden=u.role!=='admin'; }
+function updUserChip(){ const u=Auth.current(); if(!u) return; $('#userName').textContent=u.name; $('#menuStats').hidden=u.role!=='admin'; $('#menuInbox').hidden=u.role!=='admin'; refreshMsgBadge(); }
 function toast(t){ const el=document.createElement('div'); el.className='toast'; el.innerHTML=`<span class="who">강숙이</span>${esc(t)}`; document.body.appendChild(el); setTimeout(()=>el.classList.add('out'),3600); setTimeout(()=>el.remove(),4200); }
+
+/* ---------- v31 오류 신고 · 관리자 답장 ----------
+   서버: supabase/2026-10-29_reports.sql (reports, report_messages, storage 'reports')
+   신고는 서버 계정만. 이미지는 올리기 전에 줄여서(긴 변 1400px JPEG) 장당 약 300KB 이하. */
+const APP_VER='v31';
+const REP_KIND={kanji:'한자 정보 틀림',explain:'풀이·예문 틀림',screen:'화면 깨짐',etc:'기타'};
+const REP_ST={new:'새 신고',seen:'확인함',fixed:'수정 완료'};
+const TAB_KO={home:'오늘',study:'카드',quiz:'퀴즈',write:'작문',list:'목록',fav:'즐겨찾기'};
+const repBtn=k=>`<button type="button" class="rep" data-rep="${esc(k||'')}" title="오류 신고">신고</button>`;
+const repOnline=()=>{const u=Auth.current(); return !!(cloudOn()&&u&&u.cloud)};
+const repWhen=t=>new Date(t).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+const repDev=ua=>/iPhone|iPad/.test(ua)?'iPhone':/SamsungBrowser/.test(ua)?'삼성 인터넷':/Android/.test(ua)?'Android':'PC';
+const repSetupErr=e=>/reports|report_messages|bucket|relation|schema cache/i.test((e&&e.message)||'')?'서버에 신고 기능이 아직 설정되지 않았어요. 관리자에게 알려 주세요.':'보내지 못했어요. 잠시 뒤 다시 해 줘. ('+((e&&e.message)||'오류')+')';
+let REP_FILES=[];
+document.addEventListener('click',e=>{const b=e.target.closest('[data-rep]'); if(!b) return; e.preventDefault(); e.stopPropagation(); openReport(b.dataset.rep||'');},true);
+$('#repDlg').addEventListener('click',e=>{ if(e.target.closest('[data-x]')) $('#repDlg').close(); });
+async function myId(c){ const {data}=await c.auth.getSession(); return data&&data.session&&data.session.user.id; }
+async function shrinkImg(file,max=1400){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=url;});
+    const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+    const cv=document.createElement('canvas'); cv.width=Math.round(img.naturalWidth*s); cv.height=Math.round(img.naturalHeight*s);
+    const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height); g.drawImage(img,0,0,cv.width,cv.height);
+    let b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.8));
+    if(b&&b.size>600000) b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.6));
+    return b;
+  }finally{ URL.revokeObjectURL(url); }
+}
+function openReport(k){
+  const d=$('#repDlg'); REP_FILES=[];
+  if(!repOnline()){
+    $('#repBody').innerHTML=`<h2>오류 신고</h2><p class="rep-note">신고는 서버에 연결된 계정에서만 보낼 수 있어요. 인터넷을 확인하고 앱을 다시 열어 줘.</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>`;
+    if(!d.open) d.showModal(); return;
+  }
+  const def=k?'kanji':'screen';
+  $('#repBody').innerHTML=`<h2>오류 신고</h2>
+    <p class="rep-note">${k?`<b class="rep-k">${esc(k)}</b> 한자에 대한 신고예요. `:`지금 화면(${esc(TAB_KO[tab]||tab)})에 대한 신고예요. `}이상한 점을 알려 주면 확인해서 고칠게.</p>
+    <form id="repForm" class="rep-form" novalidate>
+      <div class="rep-kinds" role="radiogroup" aria-label="신고 종류">${Object.entries(REP_KIND).map(([v,l])=>`<label><input type="radio" name="repKind" value="${v}"${v===def?' checked':''}>${l}</label>`).join('')}</div>
+      <label class="af">내용<textarea id="repText" maxlength="2000" rows="4" placeholder="예: 뜻이 '나라'가 아니라 '국가'예요."></textarea></label>
+      <label class="af">캡처 이미지 (선택, 최대 3장)<input id="repImg" type="file" accept="image/*" multiple></label>
+      <div class="rep-thumbs" id="repThumbs"></div>
+      <div class="auth-err" id="repErr" role="alert"></div>
+      <div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>취소</button><button class="btn primary" id="repGo">보내기</button></div>
+    </form>`;
+  if(!d.open) d.showModal();
+  $('#repImg').onchange=async e=>{
+    const err=$('#repErr'); err.textContent='';
+    const fs=[...e.target.files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|heic)$/i.test(f.name)); e.target.value='';
+    for(const f of fs){ if(REP_FILES.length>=3){ err.textContent='이미지는 3장까지만 붙일 수 있어요.'; break; }
+      try{ const b=await shrinkImg(f); if(b) REP_FILES.push(b); }catch(_){ err.textContent='이 이미지는 읽지 못했어요. 다른 캡처로 해 줘.'; } }
+    drawThumbs();
+  };
+  $('#repForm').onsubmit=async e=>{
+    e.preventDefault(); const err=$('#repErr'), go=$('#repGo');
+    const body=$('#repText').value.trim(), kind=($('#repForm').querySelector('input[name=repKind]:checked')||{}).value||def;
+    if(!body) return err.textContent='어떤 점이 이상한지 한 줄이라도 적어 줘.';
+    go.disabled=true; go.textContent='보내는 중…'; err.textContent='';
+    try{
+      const c=await sb(), uid=await myId(c); if(!uid) throw new Error('로그인이 풀렸어요. 다시 로그인해 줘.');
+      const paths=[];
+      for(let i=0;i<REP_FILES.length;i++){ const p=`${uid}/${Date.now()}-${i}.jpg`;
+        const {error}=await c.storage.from('reports').upload(p,REP_FILES[i],{contentType:'image/jpeg'}); if(error) throw error; paths.push(p); }
+      const context={tab,ver:APP_VER,w:innerWidth,h:innerHeight,standalone:!!(matchMedia('(display-mode: standalone)').matches||navigator.standalone),ua:navigator.userAgent.slice(0,200)};
+      const {error}=await c.from('reports').insert({kind,body,kanji:k||null,context,images:paths}); if(error) throw error;
+      $('#repDlg').close(); REP_FILES=[]; toast('신고 고마워! 확인해서 고칠게. 답장은 이름 메뉴의 「내 신고·답장」에서 볼 수 있어.');
+    }catch(x){ err.textContent=repSetupErr(x); go.disabled=false; go.textContent='보내기'; }
+  };
+}
+function drawThumbs(){
+  const el=$('#repThumbs'); if(!el) return;
+  el.querySelectorAll('img').forEach(i=>URL.revokeObjectURL(i.src));
+  el.innerHTML=REP_FILES.map((b,i)=>`<span class="rep-th"><img src="${URL.createObjectURL(b)}" alt="첨부 ${i+1}"><button type="button" data-del="${i}" aria-label="첨부 ${i+1} 빼기">×</button></span>`).join('');
+  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ REP_FILES.splice(+b.dataset.del,1); drawThumbs(); });
+}
+async function refreshMsgBadge(){
+  const b=$('#msgBadge'), u=Auth.current(); if(!b||!u) return; let n=0, r=0;
+  if(repOnline()){ try{ const c=await sb(), id=await myId(c);
+    const q1=await c.from('report_messages').select('id',{count:'exact',head:true}).eq('user_id',id).is('seen_at',null); n=q1.error?0:(q1.count||0);
+    if(u.role==='admin'){ const q2=await c.from('reports').select('id',{count:'exact',head:true}).eq('status','new'); r=q2.error?0:(q2.count||0); }
+  }catch(_){} }
+  b.hidden=!(n+r); b.textContent=n+r;
+  $('#menuMyRep').textContent=n?`내 신고·답장 (새 답장 ${n})`:'내 신고·답장';
+  $('#menuInbox').textContent=r?`신고함 (관리자 · 새 ${r})`:'신고함 (관리자)';
+}
+function repHead(r){ return `<span>${repWhen(r.created_at)}</span><span class="tag">${esc(REP_KIND[r.kind]||r.kind)}</span>${r.kanji?`<b class="rep-k">${esc(r.kanji)}</b>`:''}<span class="rep-st ${r.status}">${REP_ST[r.status]||r.status}</span>`; }
+function repMsgs(ms,mine){ return ms.map(m=>`<div class="rep-msg${mine&&!m.seen_at?' new':''}"><b>관리자 답장 · ${repWhen(m.created_at)}${mine&&!m.seen_at?' · 새 답장':''}</b>${esc(m.body)}</div>`).join(''); }
+async function openMyReports(){
+  const d=$('#repDlg'); $('#repBody').innerHTML='<div class="an-load">불러오는 중…</div>'; if(!d.open) d.showModal();
+  if(!repOnline()){ $('#repBody').innerHTML='<h2>내 신고·답장</h2><p class="rep-note">서버에 연결된 계정에서만 볼 수 있어요.</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>'; return; }
+  try{
+    const c=await sb(), id=await myId(c);
+    const [a,b]=await Promise.all([
+      c.from('reports').select('id,created_at,kind,body,kanji,status').eq('user_id',id).order('created_at',{ascending:false}).limit(50),
+      c.from('report_messages').select('id,report_id,body,created_at,seen_at').eq('user_id',id).order('created_at')]);
+    if(a.error) throw a.error; if(b.error) throw b.error;
+    const by={}; (b.data||[]).forEach(m=>(by[m.report_id]=by[m.report_id]||[]).push(m));
+    $('#repBody').innerHTML=`<h2>내 신고·답장</h2>${(a.data||[]).length?`<div class="rep-list">${a.data.map(r=>`<div class="rep-item"><div class="rep-head">${repHead(r)}</div><div class="rep-body">${esc(r.body)}</div>${repMsgs(by[r.id]||[],true)}</div>`).join('')}</div>`:'<p class="rep-note">아직 보낸 신고가 없어요. 이상한 곳을 보면 빨간 「신고」 버튼을 눌러 줘.</p>'}<div class="row" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-x>닫기</button></div>`;
+    if((b.data||[]).some(m=>!m.seen_at)){ await c.rpc('mark_report_messages_seen'); refreshMsgBadge(); }
+  }catch(x){ $('#repBody').innerHTML=`<h2>내 신고·답장</h2><p class="rep-note">${esc(repSetupErr(x))}</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>`; }
+}
+async function openInbox(filter){
+  const d=$('#repDlg'); $('#repBody').innerHTML='<div class="an-load">불러오는 중…</div>'; if(!d.open) d.showModal();
+  try{
+    const c=await sb();
+    const [a,b,p]=await Promise.all([
+      c.from('reports').select('*').order('created_at',{ascending:false}).limit(200),
+      c.from('report_messages').select('*').order('created_at'),
+      c.from('profiles').select('id,name')]);
+    if(a.error) throw a.error; if(b.error) throw b.error;
+    const nick={}; (p.data||[]).forEach(x=>nick[x.id]=x.name);
+    const by={}; (b.data||[]).forEach(m=>(by[m.report_id]=by[m.report_id]||[]).push(m));
+    const all=a.data||[], cnt={open:all.filter(r=>r.status!=='fixed').length,all:all.length,fixed:all.filter(r=>r.status==='fixed').length};
+    const list=all.filter(r=>filter==='all'||(filter==='fixed'?r.status==='fixed':r.status!=='fixed'));
+    const paths=[...new Set(list.flatMap(r=>r.images||[]))]; const url={};
+    if(paths.length){ const s=await c.storage.from('reports').createSignedUrls(paths,3600); (s.data||[]).forEach(x=>{ if(x.signedUrl) url[x.path]=x.signedUrl; }); }
+    $('#repBody').innerHTML=`<h2>신고함 (관리자)</h2>
+      <div class="rep-tools">${[['open','처리 전'],['fixed','수정 완료'],['all','전체']].map(([v,l])=>`<button type="button" class="chip" data-f="${v}" aria-pressed="${v===filter}">${l} ${cnt[v]}</button>`).join('')}</div>
+      ${list.length?`<div class="rep-list">${list.map(r=>{const cx=r.context||{};
+        return `<div class="rep-item" data-id="${r.id}">
+          <div class="rep-head">${repHead(r)}<span>· ${esc(nick[r.user_id]||'(알 수 없음)')}</span></div>
+          <div class="rep-body">${esc(r.body)}</div>
+          ${(r.images||[]).length?`<div class="rep-thumbs">${r.images.map(pt=>url[pt]?`<a href="${esc(url[pt])}" target="_blank" rel="noopener"><img src="${esc(url[pt])}" alt="첨부 이미지"></a>`:'').join('')}</div>`:''}
+          <div class="rep-ctx">${esc([TAB_KO[cx.tab]||cx.tab,cx.w?cx.w+'×'+cx.h:'',cx.ua?repDev(cx.ua):'',cx.standalone?'설치 앱':'브라우저',cx.ver].filter(Boolean).join(' · '))}</div>
+          ${repMsgs(by[r.id]||[],false)}
+          <div class="rep-send"><textarea rows="2" maxlength="2000" placeholder="신고자에게 보낼 메시지"></textarea>
+            <div class="rep-tools"><button type="button" class="btn primary" data-act="send">메시지 보내기</button>${r.status!=='seen'?'<button type="button" class="btn" data-act="seen">확인함</button>':''}${r.status!=='fixed'?'<button type="button" class="btn" data-act="fixed">수정 완료</button>':''}</div></div>
+        </div>`}).join('')}</div>`:'<p class="rep-note">여기에 해당하는 신고가 없어요.</p>'}
+      <div class="row" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-x>닫기</button></div>`;
+    $('#repBody').querySelectorAll('[data-f]').forEach(bt=>bt.onclick=()=>openInbox(bt.dataset.f));
+    $('#repBody').querySelectorAll('.rep-item[data-id]').forEach(it=>it.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=async()=>{
+      const r=all.find(x=>x.id===+it.dataset.id); bt.disabled=true;
+      try{
+        if(bt.dataset.act==='send'){ const t=it.querySelector('textarea').value.trim(); if(!t){ bt.disabled=false; return toast('보낼 메시지를 적어 줘.'); }
+          const {error}=await c.from('report_messages').insert({report_id:r.id,user_id:r.user_id,body:t}); if(error) throw error;
+          if(r.status==='new') await c.from('reports').update({status:'seen'}).eq('id',r.id);
+          toast('메시지를 보냈어.'); }
+        else { const {error}=await c.from('reports').update({status:bt.dataset.act}).eq('id',r.id); if(error) throw error; }
+        await openInbox(filter); refreshMsgBadge();
+      }catch(x){ bt.disabled=false; toast(repSetupErr(x)); }
+    }));
+  }catch(x){ $('#repBody').innerHTML=`<h2>신고함 (관리자)</h2><p class="rep-note">${esc(repSetupErr(x))}</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-x>닫기</button></div>`; }
+}
 
 /* guide: 강숙이 explains the app and the learning methods */
 const GUIDE=[
@@ -1765,6 +1948,9 @@ function boot(){
   $('#menuGuide').onclick=()=>{menu.hidden=true; openGuide(false)};
   $('#menuMine').onclick=()=>{menu.hidden=true; openStats(true)};
   $('#menuStats').onclick=()=>{menu.hidden=true; openStats(false)};
+  $('#menuMyRep').onclick=()=>{menu.hidden=true; openMyReports()};
+  $('#menuInbox').onclick=()=>{menu.hidden=true; openInbox('open')};
+  $('#userChip').addEventListener('click',refreshMsgBadge);
   $('#menuName').onclick=()=>{menu.hidden=true; const u=Auth.current(); if(u) showNickname(u)};
   $('#menuPush').onclick=()=>{menu.hidden=true; togglePush()};
   $('#userChip').addEventListener('click',refreshPushLabel);
@@ -1909,7 +2095,7 @@ function renderStudy(){
   }
   const x=BY[SQ[0]], isNew=!card(x.k);
   el.innerHTML=`<div class="stage">
-    <div class="progress"><span>${isNew?'<span class="tag">NEW</span>':'<span class="tag">복습</span>'} <span class="tag">N${x.lv}</span></span><span class="row" style="gap:8px">${favBtn(x.k)}<span>남은 카드 ${SQ.length}</span></span></div>
+    <div class="progress"><span>${isNew?'<span class="tag">NEW</span>':'<span class="tag">복습</span>'} <span class="tag">N${x.lv}</span></span><span class="row" style="gap:8px">${repBtn(x.k)}${favBtn(x.k)}<span>남은 카드 ${SQ.length}</span></span></div>
     <div class="kwrap"><div class="kanji" id="fk" title="눌러서 뒤집기">${x.k}</div>${soHTML(x.k)}</div>
     ${flipped?backHTML(x)+`<div class="rate">
         ${(()=>{const pv=fPreview(card(x.k));return [[1,'몰라요','r0'],[2,'애매해요','r1'],[3,'알아요','r2'],[4,'쉬워요','r3']].map(([g,l,cl])=>`<button class="${cl}" data-r="${g}">${l}<small>${ivLabel(pv[g].days)}</small></button>`).join('')})()}</div>`
