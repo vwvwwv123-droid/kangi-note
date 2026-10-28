@@ -2035,7 +2035,6 @@ function answer(b){
   $('#fb').innerHTML=`<b style="color:var(${ok?'--good':'--seal'})">${ok?'정답':'오답'}</b> · <span style="font-family:var(--f-kanji);font-size:18px">${x.k}</span> ${esc(x.hun)} · <span class="kana">${esc(x.on)} / ${esc(x.kun)}</span>${q.sub?` · <span style="font-family:var(--f-jp)">${esc(q.prompt)} = ${esc(q.sub)}</span>`:''}
     <div style="margin-top:10px"><button class="btn primary" id="nx">${Q.i+1<Q.items.length?'다음':'결과 보기'}</button></div>`;
   if(q.tags){
-    document.querySelectorAll('.opts button').forEach((o,i)=>o.insertAdjacentHTML('beforeend',`<small class="yq-tag">${q.tags[i]}</small>`));
     $('#fb').insertAdjacentHTML('afterbegin',`<div class="yq-res">「${x.k}」 → <b>${esc(q.ans)}</b> <span class="yq-tag">${q.yt}</span></div>`);
   }
   $('#nx').onclick=nextQ; $('#nx').focus();
