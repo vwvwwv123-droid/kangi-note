@@ -1718,13 +1718,13 @@ function enterApp(u,fresh,forceGuide){
   if(!u.guided||forceGuide) openGuide(true);
   else if(fresh) toast(`${u.name}님, 어서 와! 오늘 복습할 한자는 ${dueList().length}장이야.`);
 }
-function updUserChip(){ const u=Auth.current(); if(!u) return; $('#userName').textContent=u.name; $('#menuStats').hidden=u.role!=='admin'; $('#menuInbox').hidden=u.role!=='admin'; refreshMsgBadge(); }
+function updUserChip(){ const u=Auth.current(); if(!u) return; $('#userName').textContent=u.name; $('#menuStats').hidden=u.role!=='admin'; $('#menuInbox').hidden=u.role!=='admin'; $('#menuMyRep').hidden=u.role==='admin'; refreshMsgBadge(); }
 function toast(t){ const el=document.createElement('div'); el.className='toast'; el.innerHTML=`<span class="who">강숙이</span>${esc(t)}`; document.body.appendChild(el); setTimeout(()=>el.classList.add('out'),3600); setTimeout(()=>el.remove(),4200); }
 
 /* ---------- v31 오류 신고 · 관리자 답장 ----------
    서버: supabase/2026-10-29_reports.sql (reports, report_messages, storage 'reports')
    신고는 서버 계정만. 이미지는 올리기 전에 줄여서(긴 변 1400px JPEG) 장당 약 300KB 이하. */
-const APP_VER='v34';
+const APP_VER='v35';
 const REP_KIND={kanji:'한자 정보 틀림',explain:'풀이·예문 틀림',screen:'화면 깨짐',etc:'기타'};
 const REP_ST={new:'새 신고',seen:'확인함',fixed:'수정 완료'};
 const TAB_KO={home:'오늘',study:'카드',quiz:'퀴즈',write:'작문',list:'목록',fav:'즐겨찾기'};
@@ -1786,7 +1786,7 @@ function openReport(k){
         const {error}=await c.storage.from('reports').upload(p,REP_FILES[i],{contentType:'image/jpeg'}); if(error) throw error; paths.push(p); }
       const context={tab,ver:APP_VER,w:innerWidth,h:innerHeight,standalone:!!(matchMedia('(display-mode: standalone)').matches||navigator.standalone),ua:navigator.userAgent.slice(0,200)};
       const {error}=await c.from('reports').insert({kind,body,kanji:k||null,context,images:paths}); if(error) throw error;
-      $('#repDlg').close(); REP_FILES=[]; toast('신고해 주셔서 감사합니다. 확인 후 고치겠습니다. 답변은 이름 메뉴의 「내 신고·답장」에서 볼 수 있습니다.');
+      $('#repDlg').close(); REP_FILES=[]; toast(Auth.current().role==='admin'?'신고를 저장했습니다. 신고함에서 볼 수 있습니다.':'신고해 주셔서 감사합니다. 확인 후 고치겠습니다. 답변은 이름 메뉴의 「내 신고·답장」에서 볼 수 있습니다.');
     }catch(x){ err.textContent=repSetupErr(x); go.disabled=false; go.textContent='보내기'; }
   };
 }
