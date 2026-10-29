@@ -437,6 +437,9 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 /* v31: 오류 신고 */
 .rep{display:inline-flex;align-items:center;flex:none;border:0;background:#d93a2b;color:#fff;border-radius:6px;padding:3px 7px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
 .rep:active{transform:translateY(1px)}
+.calbtn{display:inline-flex;align-items:center;flex:none;border:0;background:#e9ecef;color:#111;border-radius:6px;padding:3px 7px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
+.calbtn[aria-pressed="true"]{background:#ced4da}
+.calbtn:active{transform:translateY(1px)}
 .user-chip{position:relative}
 #msgBadge{top:-7px;right:-7px}
 #repDlg{max-width:min(600px,calc(100vw - 24px));width:100%}
@@ -498,7 +501,6 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .alerts{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
 .alerts[hidden]{display:none}
 /* calendar (v37) */
-@media (max-width:520px){nav button{flex:1 1 auto;min-width:0;padding-inline:3px}}
 .cal-top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
 .cal-top b{color:var(--ink);font-size:18px;margin-right:2px}
 .cal-head{display:flex;align-items:center;justify-content:space-between}
@@ -569,6 +571,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <header>
     <div class="brand"><b>漢字ノート</b><span id="brandCount">N5~N1</span></div>
     <div class="userbox"><div class="sync" id="sync">이 브라우저에 저장 중</div>
+      <button type="button" class="calbtn" id="calBtn" aria-pressed="false" title="학습 달력">달력</button>
       <button type="button" class="rep" data-rep="" title="오류 신고">신고</button>
       <button class="user-chip" id="userChip" aria-haspopup="menu" aria-expanded="false"><span class="av">🐱</span><span id="userName"></span><span class="nbadge" id="msgBadge" hidden></span></button>
       <div class="user-menu" id="userMenu" role="menu" hidden>
@@ -589,7 +592,6 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <button role="tab" data-tab="write" aria-selected="false">작문</button>
     <button role="tab" data-tab="list" aria-selected="false">목록<span class="nbadge" id="listBadge" hidden></span></button>
     <button role="tab" data-tab="fav" aria-selected="false">즐겨찾기</button>
-    <button role="tab" data-tab="cal" aria-selected="false">달력</button>
   </nav>
 
   <section id="v-home" class="stack"><div id="homeAlerts" class="alerts" hidden></div><div id="homeSearch"></div><div id="homeMain" class="stack"></div></section>
@@ -1249,8 +1251,9 @@ $('#dlgClose').onclick=()=>$('#dlg').close();
 /* ---------- tabs ---------- */
 let tab='home';
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
+$('#calBtn').onclick=()=>go('cal');
 function go(t,opt){
-  tab=t; document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
+  tab=t; document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t)); $('#calBtn').setAttribute('aria-pressed',t==='cal');
   ['home','study','quiz','write','list','fav','cal'].forEach(v=>$('#v-'+v).hidden=v!==t);
   if(t==='study') startStudy(opt||'auto'); else render();
   try{sessionStorage.setItem('kn-tab',t)}catch(e){}
