@@ -16,7 +16,7 @@
 1. **비밀 정보를 커밋하지 않는다.** VAPID 비공개키, CRON_KEY, 키가 들어간 SQL(`supabase/2026-10-16_push_notify.sql`)은 `.gitignore` 대상. 사용자에게 직접 전달한다. Supabase service_role 키는 어디에도 쓰지 않는다.
 2. **index.html 수정은 "정확히 1곳 일치" 치환으로만 한다.** 파일이 커서 함수 이름 추측이 자주 틀린다. 먼저 grep/regex로 위치를 확인하고, `assert s.count(old)==1` 패턴(`scripts/replace_once.py`)으로 바꾼다. 일괄 치환·전체 재작성 금지.
 3. **수정 후 반드시 검사**: `node scripts/check_syntax.js` (인라인 `<script>` 전부 문법 검사) → 필요하면 Playwright(chromium, 420×860)로 가입→닉네임→채점→스크린샷까지 헤드리스 확인. 사용자에게 손으로 테스트해 달라고 하기 전에 스스로 확인한다.
-4. **버전 번호를 올리고 README를 갱신**한 뒤 커밋한다. 커밋 메시지는 한국어, `vNN: 바뀐 내용` 형식. (현재 최신 v41, 2026-10-29 기준.)
+4. **버전 번호를 올리고 README를 갱신**한 뒤 커밋한다. 커밋 메시지는 한국어, `vNN: 바뀐 내용` 형식. (현재 최신 v42, 2026-10-29 기준.)
    - 레이아웃 수정은 헤드리스 Chromium만 믿지 않는다. 크기 속성 없는 SVG·이미지·입력칸은 실제 폰에서 최소 폭이 다르게 잡힌다(v29). 사용자 실기기 캡처로 확인받는다.
 5. **강숙이 말투 금지 구간**: 푸시 알림 문구에는 "강숙이가 먼저 와 있을게!" 같은 캐릭터 대사를 넣지 않는다(사용자가 명시적으로 거부). 알림은 제목 "한자 노트" + 사실 위주 한 줄.
 6. **보류된 기능은 되살리지 않는다**: 관리자 사용자 삭제(이메일 차단 포함)는 설계·SQL만 저장소에 남겨 두고 UI는 뺐다(git `509a5d8` 참고). 사용자가 다시 요청할 때만 복구.
@@ -36,6 +36,8 @@
 | `save()` | progress 저장(약 1초 디바운스). `last_seen`은 30초마다 + 활동 이벤트마다 |
 | `flushActivity`, `tickTime`, `tickDaily` | 학습 시간·일별 활동 집계(KST) |
 | `S.hist`, `logHist(k)`, `calSync()`, `renderCal()`, `openDay(d)` | 달력(v37): 날짜별 채점 기록, 서버 events에서 지난 기록 1회 불러오기, 달력 화면, 날짜 세부 창 |
+| `go(t)` → `goNow(t)`, `enterFocus(cb)`, `exitFocus(cb)`, `focusClose()`, `quitSheet()` | 집중 모드(v42): `go('study')`·퀴즈 시작 시 전체 화면(`body.focus`), ✕·Esc·뒤로 가기로 나감 |
+| `qCfg.diff`, `similarK(k)`, `readTraps(r)`, `CONF` | 퀴즈 난이도 상(v42): 모양 비슷한 한자, 장음·촉음·요음·탁음 함정 |
 | `#seasonBg`, `seasonBg.build(s)` | 계절 배경(v41): 2~4 봄·5~7 여름·8~10 가을·11~1 겨울. 별도 `<script>` 블록(IIFE, 전역 이름 충돌 방지), `<dialog id="dlg">` 바로 앞 |
 | `$('#menuStats')`, `$('#menuOut')` | 이름 메뉴 항목(사용 설명/내 기록/사용자 분석/닉네임/복습 알림 받기/로그아웃) |
 
