@@ -437,7 +437,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 /* v31: 오류 신고 */
 .rep{display:inline-flex;align-items:center;flex:none;border:0;background:#d93a2b;color:#fff;border-radius:6px;padding:3px 7px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
 .rep:active{transform:translateY(1px)}
-.calbtn{display:inline-flex;align-items:center;flex:none;border:0;background:#e9ecef;color:#111;border-radius:6px;padding:3px 7px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
+.calbtn{display:inline-flex;align-items:center;flex:none;border:1px solid #111;background:#e9ecef;color:#111;border-radius:6px;padding:2px 6px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
 #calBtn{margin-left:auto}
 .calbtn[aria-pressed="true"]{background:#ced4da}
 .calbtn:active{transform:translateY(1px)}
@@ -1252,7 +1252,9 @@ $('#dlgClose').onclick=()=>$('#dlg').close();
 /* ---------- tabs ---------- */
 let tab='home';
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
-$('#calBtn').onclick=()=>go('cal');
+// 달력 버튼: 한 번 더 누르면 달력을 열기 전 화면으로 (카드 학습 중이었으면 오늘로)
+let calPrev='home';
+$('#calBtn').onclick=()=>{ if(tab==='cal') go(calPrev); else { calPrev=tab==='study'?'home':tab; go('cal'); } };
 function go(t,opt){
   tab=t; document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t)); $('#calBtn').setAttribute('aria-pressed',t==='cal');
   ['home','study','quiz','write','list','fav','cal'].forEach(v=>$('#v-'+v).hidden=v!==t);
