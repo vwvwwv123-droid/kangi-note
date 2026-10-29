@@ -438,6 +438,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .rep{display:inline-flex;align-items:center;flex:none;border:0;background:#d93a2b;color:#fff;border-radius:6px;padding:3px 7px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
 .rep:active{transform:translateY(1px)}
 .calbtn{display:inline-flex;align-items:center;flex:none;border:0;background:#e9ecef;color:#111;border-radius:6px;padding:3px 7px;font:inherit;font-size:11px;font-weight:700;line-height:1.25;cursor:pointer;min-width:0}
+#calBtn{margin-left:auto}
 .calbtn[aria-pressed="true"]{background:#ced4da}
 .calbtn:active{transform:translateY(1px)}
 .user-chip{position:relative}
@@ -516,8 +517,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .cal-d[data-lv="3"]{background:#5aa874;color:#fff}
 .cal-d[data-lv="4"]{background:var(--good);color:#fff}
 .cal-d.fut{background:transparent;color:var(--muted)}
-.cal-d.today{border:2px solid var(--accent)}
-.cal-d.today b{font-weight:700}
+.cal-d.cal-now{border:2px solid var(--accent)}
+.cal-d.cal-now b{font-weight:700}
 .cal-due{position:absolute;right:2px;top:2px;min-width:15px;height:15px;padding:0 3px;box-sizing:border-box;border-radius:8px;background:#e8590c;color:#fff;font-size:9px;font-style:normal;font-weight:700;line-height:15px;text-align:center}
 .cal-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end}
 .cal-bar{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:104px;border:0;background:none;cursor:pointer;padding:0;font-size:11px;color:var(--muted);min-width:0}
@@ -571,7 +572,6 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <header>
     <div class="brand"><b>漢字ノート</b><span id="brandCount">N5~N1</span></div>
     <div class="userbox"><div class="sync" id="sync">이 브라우저에 저장 중</div>
-      <button type="button" class="calbtn" id="calBtn" aria-pressed="false" title="학습 달력">달력</button>
       <button type="button" class="rep" data-rep="" title="오류 신고">신고</button>
       <button class="user-chip" id="userChip" aria-haspopup="menu" aria-expanded="false"><span class="av">🐱</span><span id="userName"></span><span class="nbadge" id="msgBadge" hidden></span></button>
       <div class="user-menu" id="userMenu" role="menu" hidden>
@@ -584,6 +584,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
         <button id="menuPush" role="menuitem">복습 알림 받기</button><hr>
         <button id="menuOut" role="menuitem">로그아웃</button>
       </div></div>
+    <button type="button" class="calbtn" id="calBtn" aria-pressed="false" title="학습 달력">달력</button>
   </header>
   <nav role="tablist">
     <button role="tab" data-tab="home" aria-selected="true">오늘</button>
@@ -1296,7 +1297,7 @@ function renderCal(){
   let mDays=0; const last=new Date(y,mo+1,0).getDate();
   for(let i=1;i<=last;i++){ const d=ymd(new Date(y,mo,i)), n=d<=t?nStudied(d):0, r=d>=t&&due[d]?due[d].length:0; if(n) mDays++;
     const lv=n?(n<5?1:n<15?2:n<30?3:4):0;
-    cells+=`<button class="cal-d${d===t?' today':''}${d>t?' fut':''}" data-d="${d}" data-lv="${lv}" aria-label="${mo+1}월 ${i}일${n?` 공부 ${n}자`:''}${r?` 복습 예정 ${r}장`:''}"><b>${i}</b>${r?`<i class="cal-due">${r>99?'99+':r}</i>`:''}</button>`; }
+    cells+=`<button class="cal-d${d===t?' cal-now':''}${d>t?' fut':''}" data-d="${d}" data-lv="${lv}" aria-label="${mo+1}월 ${i}일${n?` 공부 ${n}자`:''}${r?` 복습 예정 ${r}장`:''}"><b>${i}</b>${r?`<i class="cal-due">${r>99?'99+':r}</i>`:''}</button>`; }
   const wk=[]; for(let i=0;i<7;i++){ const dd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i), d=ymd(dd); wk.push({d,n:due[d]?due[d].length:0,lab:i?WD[dd.getDay()]:'오늘'}); }
   const max=Math.max(1,...wk.map(x=>x.n)), avg=wk.reduce((a,x)=>a+x.n,0)/7;
   $('#v-cal').innerHTML=`<div class="panel stack">
