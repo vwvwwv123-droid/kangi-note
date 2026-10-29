@@ -501,6 +501,33 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 /* v33: 알림 띠 */
 .alerts{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
 .alerts[hidden]{display:none}
+/* season background (v41) */
+#seasonBg{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;--sh:calc(min(100vw,760px)*.5556)}
+#seasonBg svg{display:block;overflow:visible}
+.sb-scene{position:absolute;bottom:0;left:50%;width:min(100vw,760px);transform:translateX(-50%)}
+.sb-scene svg{width:100%;height:auto}
+.sb-band{position:absolute;left:0;right:0;bottom:0}
+/* 앱 화면 맨 아래에 풍경 높이의 절반만큼 여백 → 끝까지 내리면 땅과 고양이가 보임 */
+body:has(#app:not([hidden])){padding-bottom:calc(min(100vw,760px)*.28 + 24px)}
+.sb-stage{position:absolute;left:0;right:0;bottom:0;height:var(--sh)}
+.sb-cat{position:absolute;bottom:9%;left:-100px;width:min(17vw,64px);animation:sbWalk 21s linear infinite}
+.sb-cat.boat{bottom:20%;width:min(24vw,88px)}
+.sb-cat svg{width:100%;height:auto}
+@keyframes sbWalk{from{left:-100px}to{left:calc(100% + 20px)}}
+.sb-body{animation:sbBob .6s ease-in-out infinite alternate}
+@keyframes sbBob{to{transform:translateY(-.8px)}}
+.sb-leg{transform-box:view-box;animation:sbStep .6s ease-in-out infinite alternate}
+.sb-leg.b{animation-direction:alternate-reverse}
+@keyframes sbStep{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}
+.sb-tail{transform-box:fill-box;transform-origin:100% 100%;animation:sbTail 1.2s ease-in-out infinite alternate}
+@keyframes sbTail{from{transform:rotate(-8deg)}to{transform:rotate(10deg)}}
+.sb-rock{transform-box:fill-box;transform-origin:50% 100%;animation:sbRock 2.4s ease-in-out infinite alternate}
+@keyframes sbRock{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(2px) rotate(3deg)}}
+.sb-fall span{position:absolute;top:-24px;width:16px;height:16px;opacity:.85;animation:sbDrop linear infinite}
+.sb-fall svg{width:100%;height:100%;animation:sbSway 3s ease-in-out infinite alternate}
+@keyframes sbDrop{to{transform:translateY(calc(100vh + 48px))}}
+@keyframes sbSway{from{transform:translateX(-10px) rotate(-25deg)}to{transform:translateX(10px) rotate(25deg)}}
+@media (prefers-reduced-motion:reduce){#seasonBg *{animation:none!important}.sb-cat{left:40%}.sb-fall{display:none}}
 /* calendar (v37) */
 .cal-top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
 .cal-top b{color:var(--ink);font-size:18px;margin-right:2px}
@@ -609,6 +636,135 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 <dialog id="statsDlg"><div id="statsBody"></div></dialog>
 <dialog id="setupDlg"><div id="setupBody"></div></dialog>
 <dialog id="repDlg"><div id="repBody"></div></dialog>
+<div id="seasonBg" aria-hidden="true"></div>
+<script>
+/* ===== 계절 배경 (v41): 2~4월 봄 · 5~7월 여름 · 8~10월 가을 · 11~1월 겨울 =====
+   화면 맨 뒤(z-index:-1)에 하늘색 그라데이션 + 아래쪽 풍경 + 떨어지는 꽃잎·잎·눈 + 고양이(여름은 배).
+   고양이 그리는 법: 같은 모양을 ① 갈색 윤곽으로 두껍게 ② 색만 칠해서 두 번 그린다 → 몸·다리·머리가 한 덩어리 윤곽. */
+(()=>{
+const el=document.getElementById('seasonBg');
+const seasonOf=(d=new Date())=>{const m=d.getMonth()+1; return m>=2&&m<=4?'spring':m>=5&&m<=7?'summer':m>=8&&m<=10?'autumn':'winter';};
+
+/* 소품 */
+const PETAL='M0,0 C-5,-4 -6,-11 -2.5,-14 L0,-11.5 L2.5,-14 C6,-11 5,-4 0,0Z';
+const petal=(x,y,s,r,c,o=1)=>`<path d="${PETAL}" transform="translate(${x} ${y}) rotate(${r}) scale(${s})" fill="${c}" opacity="${o}"/>`;
+const MAPLE='M0,-14 L3,-6 L9,-9 L7,-2 L14,-2 L8,3 L10,8 L3,6 L0.8,10 L0.8,16 L-0.8,16 L-0.8,10 L-3,6 L-10,8 L-8,3 L-14,-2 L-7,-2 L-9,-9 L-3,-6Z';
+const maple=(x,y,s,r,c,o=1)=>`<path d="${MAPLE}" transform="translate(${x} ${y}) rotate(${r}) scale(${s})" fill="${c}" opacity="${o}"/>`;
+const flake=(x,y,s,c,o=1)=>`<g transform="translate(${x} ${y}) scale(${s})" stroke="${c}" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="${o}">${[0,60,120,180,240,300].map(a=>`<path transform="rotate(${a})" d="M0,0 L0,-11 M0,-6 L-3.5,-9.5 M0,-6 L3.5,-9.5"/>`).join('')}</g>`;
+const dot=(x,y,r,c,o=1)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" opacity="${o}"/>`;
+const wave=(y,amp,len,fill)=>{let d=`M0,${y} Q${len/4},${y-amp} ${len/2},${y}`;for(let x=len/2;x<360;x+=len/2)d+=` T${x+len/2},${y}`;return `<path d="${d} L360,200 L0,200Z" fill="${fill}"/>`;};
+
+/* 계절별 풍경(360×200, 아래쪽에 깔림) · 하늘 · 땅 띠 색 · 떨어지는 것 */
+const SC={
+  spring:{sky:['#eaf3fb','#fdf5f7'],bands:[['#dcebd2',.34],['#c6dfb9',.14]],
+    fall:`<path d="${PETAL}" transform="translate(9 15)" fill="#f2a7bb"/>`,
+    scene:[`<path d="M0,140 C60,110 120,120 180,135 C240,150 300,115 360,125 L360,200 L0,200Z" fill="#dcebd2"/>`,
+    `<path d="M0,174 C90,168 200,179 360,171 L360,200 L0,200Z" fill="#c6dfb9"/>`,
+    `<path d="M285,172 C287,150 282,132 288,112 M286,138 L262,120 M287,126 L306,110" stroke="#9b7a66" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+    [[288,100,26],[262,112,18],[308,100,20],[272,90,16],[300,84,16],[250,100,12],[320,114,13]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#f6c3d1"/>`).join(''),
+    [[280,92,14],[300,96,11],[264,106,9]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fbdbe4"/>`).join(''),
+    `<path d="M70,150 C72,140 69,132 72,124" stroke="#9b7a66" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+    [[72,118,13],[60,124,9],[84,124,9]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#f9d2dd"/>`).join(''),
+    petal(200,90,.7,30,'#f2a7bb',.7),petal(160,110,.6,-50,'#f2a7bb',.6),petal(230,60,.6,100,'#f6c1cf',.8),petal(120,80,.5,10,'#f6c1cf',.7)].join('')},
+  summer:{sky:['#e3f2fb','#f3fafd'],bands:[['#c4e2f0',.36],['#a5d1e7',.24],['#86bede',.12]],fall:'',
+    scene:[`<circle cx="300" cy="62" r="26" fill="#ffe2a1"/>`,`<circle cx="300" cy="62" r="36" fill="#ffe2a1" opacity=".3"/>`,
+    `<ellipse cx="80" cy="70" rx="34" ry="10" fill="#fff"/><ellipse cx="100" cy="62" rx="20" ry="10" fill="#fff"/>`,
+    `<path d="M150,128 C170,110 200,108 222,128Z" fill="#b9d8a8"/>`,
+    wave(128,6,60,'#c4e2f0'),wave(152,6,48,'#a5d1e7'),wave(176,5,40,'#86bede')].join('')},
+  autumn:{sky:['#f6efe6','#fcf6ee'],bands:[['#f0d5bd',.26],['#e7bd98',.14]],
+    fall:`<path d="${MAPLE}" transform="translate(9 8) scale(.55)" fill="#e07a4f"/>`,
+    scene:[`<circle cx="80" cy="55" r="22" fill="#fbe5bb"/>`,
+    `<path d="M120,48 l5,4 l5,-4 M138,40 l4,3 l4,-3 M150,52 l4,3 l4,-3" stroke="#b39a84" stroke-width="1.4" fill="none" stroke-linecap="round"/>`,
+    `<path d="M0,150 L60,105 L110,140 L170,90 L240,145 L300,110 L360,140 L360,200 L0,200Z" fill="#f0d5bd"/>`,
+    `<path d="M0,174 C90,168 200,179 360,171 L360,200 L0,200Z" fill="#e7bd98"/>`,
+    [[40,158,'#d9653b'],[62,154,'#e89a3c'],[250,160,'#d9653b'],[275,156,'#e3b54a'],[300,153,'#d9653b'],[320,151,'#e89a3c']].map(([x,y,c])=>`<path d="M${x},${y+12} L${x},${y}" stroke="#8a6a58" stroke-width="2"/><circle cx="${x}" cy="${y-6}" r="9" fill="${c}"/>`).join(''),
+    `<path d="M150,190 C150,175 145,165 138,158 M156,190 C157,174 162,164 170,157 M153,190 C153,172 153,162 152,152" stroke="#c9a77c" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
+    maple(200,70,.7,20,'#e07a4f',.7),maple(230,100,.5,-30,'#d9553b',.6)].join('')},
+  winter:{sky:['#e9eff6','#f6f8fb'],bands:[['#d5dfea',.26],['#ffffff',.14]],
+    fall:`<g transform="translate(9 9) scale(.7)" stroke="#8fa8c2" stroke-width="1.6" stroke-linecap="round" fill="none">${[0,60,120].map(a=>`<path transform="rotate(${a})" d="M0,-11 L0,11"/>`).join('')}</g>`,
+    scene:[flake(60,40,.6,'#a9bdd2',.8),flake(170,30,.5,'#a9bdd2',.8),flake(300,55,.7,'#a9bdd2',.8),dot(120,60,2,'#c3d1e0'),dot(240,40,2,'#c3d1e0'),
+    `<path d="M0,150 L70,95 L130,140 L200,80 L270,140 L320,110 L360,135 L360,200 L0,200Z" fill="#d5dfea"/>`,
+    `<path d="M70,95 L57,105 L65,103 L71,108 L78,102 L84,106Z M200,80 L184,95 L194,92 L201,98 L209,92 L217,96Z M320,110 L309,118 L316,117 L322,121 L330,117Z" fill="#fff"/>`,
+    `<path d="M0,174 C100,168 240,179 360,171 L360,200 L0,200Z" fill="#fff"/>`,
+    [[40,170],[58,174],[290,168],[312,172]].map(([x,y])=>`<path d="M${x},${y-30} L${x-10},${y-12} L${x-5},${y-12} L${x-12},${y} L${x+12},${y} L${x+5},${y-12} L${x+10},${y-12}Z" fill="#6f8f86"/><path d="M${x},${y-30} L${x-4},${y-23} L${x+4},${y-23}Z M${x-8},${y-14} L${x+8},${y-14} L${x+5},${y-11} L${x-5},${y-11}Z" fill="#fff"/>`).join('')].join('')}
+};
+
+/* 고양이 (노란 몸 · 흰 배, 옆모습, 오른쪽을 봄) */
+const Y='#f6c445', YD='#e0a92e', W='#fffaf0', OL='#4a3a33', PK='#f2a1a8';
+const BODY='M14.5,23 C13.8,17 19,14 25,13.9 L26.4,12.7 L27.3,13.9 L28.8,12.9 L29.5,14 C37,14 43,14.6 47,17.5 C50.5,20.5 50.5,27 46.5,30.6 C43,33 36,33.2 29,33 C22,32.8 15.5,30.5 14.5,23Z';
+const HEAD='M43,12.5 C43,7 47,3.6 52,3.6 C57,3.6 61,7 61.4,11 C63.4,11.8 64.2,13.6 63.8,15.4 C63.2,17.8 60.6,19.4 57.6,20.4 C55.6,21.4 50.6,21.8 47.8,20.8 L45.9,22 L46,20.1 L44,20.4 L44.5,18.7 L43,18.3 C42.6,16.4 43,14.4 43,12.5Z';
+const EAR_N='M48.5,7.2 C48.6,4 49.6,1 50.6,-0.6 C52.6,1.2 54.6,3.4 55.4,6Z';
+const EAR_F='M44.2,9.6 C43.6,6.4 43.8,3.2 44.6,1.4 C46.6,2.8 48.4,4.6 49.2,7Z';
+const EAR_IN='M50.1,5.6 C50.2,3.6 50.8,2 51.2,1.3 C52.4,2.6 53.4,4 53.8,5.6Z';
+const TAIL='M15.5,22.5 C9,22 5.5,17 6.5,11 C7,8 8.6,6 10.2,5.6';
+const TUFT='M8.6,4.4 L10.4,3.2 L10.9,5 L12.6,4.6 L11.6,6.6Z';
+const zig=(x0,x1,ya,yb)=>{let s='';for(let x=x0,i=0;x<=x1;x+=2.2,i++) s+=` L${x.toFixed(1)},${i%2?yb:ya}`;return s;};
+const BELLY=`M18.5,29${zig(20,46,28.4,29.5)} L48,27 L49.2,24.8 L50.3,23.2 C50.4,27.6 47.6,31.4 43,32.6 C36,33.7 25,33.4 19.5,31 C17.6,30.2 17.8,29.4 18.5,29Z`;
+const ol=d=>`<path d="${d}" fill="${OL}" stroke="${OL}" stroke-width="2.2" stroke-linejoin="round"/>`;
+const fl=(d,c)=>`<path d="${d}" fill="${c}"/>`;
+const st=(d,c,w=1.4)=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+const LEG=x=>`M${x-3.2},23 C${x-3.6},33 ${x-2.7},39.5 ${x-2.7},42.6 C${x-2.7},45.6 ${x+3.3},45.6 ${x+3.4},43.4 C${x+3.3},39.5 ${x+3.7},33 ${x+3.2},23Z`;
+const legOf=(x,cls,fill,sock)=>`<g class="sb-leg ${cls}" style="transform-origin:${x}px 25px">${fill
+  ?fl(LEG(x),fill)+(sock?`<path d="M${x-2.8},41.6 L${x-1.4},40.6 L${x},41.4 L${x+1.4},40.6 L${x+3.3},41.4 C${x+3.4},42.6 ${x+3.3},45.4 ${x+.3},45.4 C${x-2.7},45.4 ${x-2.8},43.6 ${x-2.8},41.6Z" fill="${W}"/>`:'')
+  :ol(LEG(x))}</g>`;
+const tailG=fill=>`<g class="sb-tail">${fill
+  ?st(TAIL,Y,4.4)+st('M4.9,14.6 L8.9,15.4 M5.6,10.4 L9.2,11.8',YD,1.3)+fl(TUFT,Y)
+  :st(TAIL,OL,6.6)+ol(TUFT)}</g>`;
+const FACE=fl('M55.2,16.8 C57,14.6 60.8,14.2 63.6,15 C63.4,17.6 60.6,19.2 57.6,20 C55.8,20.2 54.8,18.6 55.2,16.8Z',W)
+  +st('M48.6,5.8 C49.2,7 49.2,8.2 48.8,9.2 M51.6,5.4 C52,6.6 52,7.8 51.6,8.8 M45.4,12 C46.6,12.6 47.4,13.6 47.6,14.8',YD,1.3)
+  +st('M51.3,4.4 L51.9,2.6 M52.6,4.8 L53.4,3.4',W,.5)
+  +`<ellipse cx="56" cy="11" rx="2.2" ry="2.5" fill="#fff" stroke="${OL}" stroke-width=".55"/><ellipse cx="57.1" cy="11.2" rx="1.4" ry="1.9" fill="${OL}"/><circle cx="57.6" cy="10.4" r=".5" fill="#fff"/>`
+  +`<path d="M62.4,13.4 L64.2,13.7 L63.2,15Z" fill="${PK}" stroke="${OL}" stroke-width=".4" stroke-linejoin="round"/>`
+  +st('M63.2,15.1 C62.8,16.6 61.6,17 60.6,16.4',OL,.7)
+  +`<path d="M59.6,15.6 L66.8,14 M59.8,16.7 L67,17.4" stroke="${OL}" stroke-width=".45" opacity=".55" stroke-linecap="round"/>`
+  +`<ellipse cx="58.2" cy="16.2" rx="1.7" ry="1" fill="${PK}" opacity=".55"/>`;
+const headOL=()=>ol(EAR_F)+ol(HEAD)+ol(EAR_N);
+const headFL=()=>fl(EAR_F,YD)+fl(HEAD,Y)+fl(EAR_N,Y)+fl(EAR_IN,PK)+FACE;
+const BACK=st('M33,14.4 C33.4,16 33.2,17.4 32.4,18.4 M37.4,14.8 C37.8,16.2 37.6,17.6 36.8,18.6 M41.6,15.8 C41.8,17 41.4,18.2 40.6,19 M19.4,16.4 C20.6,17.6 21.2,19 21.2,20.4 M23,15 C24,16.2 24.6,17.6 24.6,19',YD,1.5);
+const catWalk=()=>`<svg viewBox="0 -3 70 50"><g class="sb-body">
+${legOf(24,'a')}${legOf(38,'b')}${tailG(0)}${ol(BODY)}${legOf(20,'b')}${legOf(42,'a')}${headOL()}
+${legOf(24,'a',YD)}${legOf(38,'b',YD)}${tailG(1)}${fl(BODY,Y)}${BACK}${fl(BELLY,W)}${legOf(20,'b',Y,1)}${legOf(42,'a',Y,1)}${headFL()}
+</g></svg>`;
+const SIT='M20,45 C17.6,37 19.6,30.6 26,28.4 C31,26.8 36.4,28.2 38.6,32.4 C40.4,36.4 40.4,41.4 39.4,45Z';
+const SIT_CHEST='M31,30.2 L32.4,31.4 L33.6,30.4 L34.8,31.8 L36.2,30.8 C38.6,32.6 39.8,36.6 39.4,41 L39,45 L31.4,45 C30.2,40 30,34.4 31,30.2Z';
+const BTAIL='M21,41 C13.6,41 10.6,34.6 12.8,29.4';
+const catBoat=()=>`<svg viewBox="0 -2 80 66"><g class="sb-rock">
+<path d="M57,46 L57,6" stroke="${OL}" stroke-width="1.6"/>
+<path d="M58.5,8 L58.5,41 L77,39Z" fill="#fff" stroke="${OL}" stroke-width="1" stroke-linejoin="round"/>
+<path d="M58.5,26 L71,25" stroke="#e8604c" stroke-width="2"/>
+<g class="sb-tail">${st(BTAIL,OL,6.4)}</g>${ol(SIT)}<g transform="translate(-14 10)">${headOL()}</g>
+<g class="sb-tail">${st(BTAIL,Y,4.2)+st('M11.4,35 L15,34.2',YD,1.3)}</g>${fl(SIT,Y)}${st('M24,31 C25,32.4 25.4,34 25.2,35.6 M27.6,29.4 C28.6,30.8 29,32.4 28.8,34',YD,1.5)}${fl(SIT_CHEST,W)}<g transform="translate(-14 10)">${headFL()}</g>
+<ellipse cx="38" cy="45.2" rx="2.6" ry="1.7" fill="${W}" stroke="${OL}" stroke-width=".9"/><ellipse cx="42.6" cy="45.2" rx="2.6" ry="1.7" fill="${W}" stroke="${OL}" stroke-width=".9"/>
+<path d="M8,46 L76,46 L66,58 L18,58Z" fill="#e8604c" stroke="${OL}" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M12,50.5 L72,50.5" stroke="#fff" stroke-width="1.6" opacity=".8"/>
+<path d="M4,60 q6,-3 12,0 t12,0 t12,0 t12,0 t12,0 t12,0" fill="none" stroke="#86bede" stroke-width="1.6" stroke-linecap="round"/>
+</g></svg>`;
+
+/* 그리기 */
+let cur=null;
+function speed(){ // 화면 폭과 상관없이 비슷한 빠르기(초당 약 22px, 배는 16px)
+  const c=el.querySelector('.sb-cat'); if(!c) return;
+  c.style.animationDuration=Math.round((innerWidth+140)/(cur==='summer'?16:22))+'s';
+}
+function build(s){
+  cur=s; const x=SC[s]; el.dataset.season=s;
+  el.style.background=`linear-gradient(${x.sky[0]},${x.sky[1]})`;
+  const drops=x.fall?[6,19,33,47,61,74,88,40].map((l,i)=>`<span style="left:${l}%;animation-duration:${9+i%3*3}s;animation-delay:-${(i*1.7).toFixed(1)}s"><svg viewBox="0 0 18 18">${x.fall}</svg></span>`).join(''):'';
+  // 넓은 화면: 풍경은 가운데 760px, 양옆은 같은 색 띠로 이어 붙임
+  el.innerHTML=x.bands.map(([c,f])=>`<div class="sb-band" style="background:${c};height:calc(var(--sh)*${f})"></div>`).join('')
+    +`<div class="sb-scene"><svg viewBox="0 0 360 200">${x.scene}</svg></div>`
+    +`<div class="sb-fall">${drops}</div>`
+    +`<div class="sb-stage"><div class="sb-cat${s==='summer'?' boat':''}">${s==='summer'?catBoat():catWalk()}</div></div>`;
+  speed();
+}
+function check(){ const s=seasonOf(); if(s!==cur) build(s); }
+check();
+addEventListener('resize',speed);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) check(); });
+setInterval(check,10*60000);
+window.seasonBg={build,seasonOf}; // 확인용: seasonBg.build('summer')
+})();
+</script>
 <dialog id="dlg"><div id="dlgBody"></div><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" id="dlgClose">닫기</button></div></dialog>
 
 <script>
