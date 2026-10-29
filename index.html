@@ -497,6 +497,34 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 /* v33: 알림 띠 */
 .alerts{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
 .alerts[hidden]{display:none}
+/* calendar (v37) */
+@media (max-width:520px){nav button{flex:1 1 auto;min-width:0;padding-inline:3px}}
+.cal-top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted)}
+.cal-top b{color:var(--ink);font-size:18px;margin-right:2px}
+.cal-head{display:flex;align-items:center;justify-content:space-between}
+.cal-head h2{margin:0}
+.cal-nav{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;width:36px;height:36px;font-size:20px;line-height:1;cursor:pointer}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-wd span{text-align:center;font-size:12px;color:var(--muted)}
+.cal-wd span:first-child{color:var(--seal)}
+.cal-d{position:relative;aspect-ratio:1;min-width:0;border:1px solid transparent;border-radius:9px;background:var(--bg);color:var(--ink);font-size:13px;cursor:pointer;padding:0;display:grid;place-items:center}
+.cal-d b{font-weight:500}
+.cal-d[data-lv="1"]{background:#d3ecda}
+.cal-d[data-lv="2"]{background:#a3d4b0}
+.cal-d[data-lv="3"]{background:#5aa874;color:#fff}
+.cal-d[data-lv="4"]{background:var(--good);color:#fff}
+.cal-d.fut{background:transparent;color:var(--muted)}
+.cal-d.today{border:2px solid var(--accent)}
+.cal-d.today b{font-weight:700}
+.cal-due{position:absolute;right:2px;top:2px;min-width:15px;height:15px;padding:0 3px;box-sizing:border-box;border-radius:8px;background:#e8590c;color:#fff;font-size:9px;font-style:normal;font-weight:700;line-height:15px;text-align:center}
+.cal-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end}
+.cal-bar{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:104px;border:0;background:none;cursor:pointer;padding:0;font-size:11px;color:var(--muted);min-width:0}
+.cal-bar i{display:block;width:70%;min-height:2px;border-radius:5px 5px 2px 2px;background:#ffc078}
+.cal-bar.heavy i{background:#d9480f}
+.cal-bar em{font-style:normal;font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
+.cal-note{font-size:12px;color:var(--muted);margin:0}
+.cal-ks{display:flex;flex-wrap:wrap;gap:6px;max-height:36vh;overflow:auto}
+.cal-k{width:40px;height:40px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink);font-family:var(--f-kanji);font-size:22px;cursor:pointer;padding:0}
 .alert-bar{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:12px;padding:12px 14px;font:inherit;font-size:14px;font-weight:600;text-align:left;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.12)}
 .alert-bar.due{background:#d9480f}
 .alert-bar.msg,.alert-bar.inbox{background:#c92a2a}
@@ -561,6 +589,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <button role="tab" data-tab="write" aria-selected="false">작문</button>
     <button role="tab" data-tab="list" aria-selected="false">목록<span class="nbadge" id="listBadge" hidden></span></button>
     <button role="tab" data-tab="fav" aria-selected="false">즐겨찾기</button>
+    <button role="tab" data-tab="cal" aria-selected="false">달력</button>
   </nav>
 
   <section id="v-home" class="stack"><div id="homeAlerts" class="alerts" hidden></div><div id="homeSearch"></div><div id="homeMain" class="stack"></div></section>
@@ -569,6 +598,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <section id="v-write" class="stack" hidden></section>
   <section id="v-list" class="stack" hidden></section>
   <section id="v-fav" class="stack" hidden></section>
+  <section id="v-cal" class="stack" hidden></section>
 </div>
 
 <footer style="max-width:720px;margin:24px auto 0;font-size:11px;color:var(--muted)">획순 데이터: <a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a> © Ulrich Apel, CC BY-SA 3.0</footer>
@@ -1025,7 +1055,7 @@ function dueList(){return pool().filter(x=>isDue(x.k)).sort((a,b)=>card(a.k).d-c
 function newList(){rollDay(); const left=Math.max(0,S.settings.newPerDay-S.daily.newDone); return pool().filter(x=>!card(x.k)).slice(0,left)}
 function fApply(k,g){
   const now=Date.now(); const prev=card(k); const p=fPreview(prev,now)[g];
-  const c=prev||(S.cards[k]={n:0,w:0});
+  const c=prev||(S.cards[k]={n:0,w:0,f:today()});
   c.S=p.S; c.D=p.D; c.L=now; c.d=p.due; c.n=(c.n||0)+1; c.g=g; if(g===1) c.w=(c.w||0)+1;
   return !prev;
 }
@@ -1033,7 +1063,7 @@ function fApply(k,g){
 function grade(k,g){
   rollDay(); const fresh=fApply(k,g);
   if(fresh) S.daily.newDone++; else S.daily.reviews++;
-  card(k).t=today();
+  card(k).t=today(); logHist(k);
   logEvent&&logEvent('review',{k,g});
   markStudied(); save();
 }
@@ -1221,12 +1251,83 @@ let tab='home';
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 function go(t,opt){
   tab=t; document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  ['home','study','quiz','write','list','fav'].forEach(v=>$('#v-'+v).hidden=v!==t);
+  ['home','study','quiz','write','list','fav','cal'].forEach(v=>$('#v-'+v).hidden=v!==t);
   if(t==='study') startStudy(opt||'auto'); else render();
   try{sessionStorage.setItem('kn-tab',t)}catch(e){}
 }
-function render(){ if(tab==='home') renderHome(); if(tab==='list') renderList(); if(tab==='fav') renderFav(); if(tab==='write'&&!W) renderWriteSetup(); if(tab==='quiz'&&!Q) renderQuizSetup(); }
+function render(){ if(tab==='home') renderHome(); if(tab==='list') renderList(); if(tab==='fav') renderFav(); if(tab==='cal') renderCal(); if(tab==='write'&&!W) renderWriteSetup(); if(tab==='quiz'&&!Q) renderQuizSetup(); }
 
+/* ---------- calendar (v37) ---------- */
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const WD='일월화수목금토';
+// 날짜별로 채점한 한자를 문자열로 모은다. S.hist={'2026-10-29':'日月…'}, 400일까지
+function logHist(k){ const h=S.hist||(S.hist={}), t=today(), v=h[t]||''; if(!v.includes(k)) h[t]=v+k;
+  const ks=Object.keys(h); if(ks.length>400) ks.sort().slice(0,ks.length-400).forEach(x=>delete h[x]); }
+// 서버 계정: events 표의 지난 채점 기록으로 hist·처음 배운 날을 한 번 채운다
+let calMonth=null, calSyncing=false, calSyncFail=false;
+async function calSync(){
+  if(S.histSync||calSyncing||calSyncFail||!cloudOn()||!Auth.current()) return;
+  calSyncing=true;
+  try{ const c=await sb(); if(!c) throw 0; const uid=Auth.current().uid, rows=[];
+    for(let from=0;;from+=1000){ const {data,error}=await c.from('events').select('data,created_at').eq('user_id',uid).eq('type','review').order('created_at',{ascending:true}).range(from,from+999);
+      if(error) throw error; rows.push(...data); if(data.length<1000) break; }
+    const h=S.hist||(S.hist={});
+    rows.forEach(r=>{ const k=r.data&&r.data.k; if(!k||!BY[k]||!r.created_at) return; const d=ymd(new Date(r.created_at)); const v=h[d]||''; if(!v.includes(k)) h[d]=v+k;
+      const cd=card(k); if(cd&&(!cd.f||cd.f>d)) cd.f=d; });
+    S.histSync=1; save();
+  }catch(e){ calSyncFail=true; }
+  calSyncing=false; if(tab==='cal') renderCal();
+}
+function studiedOn(d){ const s=new Set([...((S.hist||{})[d]||'')]); Object.entries(S.cards).forEach(([k,c])=>{ if(c.t===d) s.add(k); }); return [...s].filter(k=>BY[k]); }
+function newOn(d){ return Object.entries(S.cards).filter(([k,c])=>c.f===d&&BY[k]).map(([k])=>k); }
+// 복습 예정: 학습 레벨 범위의 카드를 다음 복습 날짜별로. 밀린 카드는 오늘로
+function dueByDay(){ const m={}, t=today(); pool().forEach(x=>{ const c=card(x.k); if(!c||c.d==null) return; let d=ymd(new Date(c.d)); if(d<t) d=t; (m[d]||(m[d]=[])).push(x.k); }); return m; }
+function renderCal(){
+  calSync();
+  const now=new Date(), t=today();
+  if(!calMonth) calMonth=new Date(now.getFullYear(),now.getMonth(),1);
+  const y=calMonth.getFullYear(), mo=calMonth.getMonth(), due=dueByDay();
+  const tMap={}; Object.entries(S.cards).forEach(([k,c])=>{ if(c.t&&BY[k]) (tMap[c.t]||(tMap[c.t]=new Set())).add(k); });
+  const nStudied=d=>{ const s=new Set(tMap[d]||[]); [...((S.hist||{})[d]||'')].forEach(k=>BY[k]&&s.add(k)); return s.size; };
+  let cells=''; for(let i=new Date(y,mo,1).getDay();i>0;i--) cells+='<span></span>';
+  let mDays=0; const last=new Date(y,mo+1,0).getDate();
+  for(let i=1;i<=last;i++){ const d=ymd(new Date(y,mo,i)), n=d<=t?nStudied(d):0, r=d>=t&&due[d]?due[d].length:0; if(n) mDays++;
+    const lv=n?(n<5?1:n<15?2:n<30?3:4):0;
+    cells+=`<button class="cal-d${d===t?' today':''}${d>t?' fut':''}" data-d="${d}" data-lv="${lv}" aria-label="${mo+1}월 ${i}일${n?` 공부 ${n}자`:''}${r?` 복습 예정 ${r}장`:''}"><b>${i}</b>${r?`<i class="cal-due">${r>99?'99+':r}</i>`:''}</button>`; }
+  const wk=[]; for(let i=0;i<7;i++){ const dd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i), d=ymd(dd); wk.push({d,n:due[d]?due[d].length:0,lab:i?WD[dd.getDay()]:'오늘'}); }
+  const max=Math.max(1,...wk.map(x=>x.n)), avg=wk.reduce((a,x)=>a+x.n,0)/7;
+  $('#v-cal').innerHTML=`<div class="panel stack">
+    <div class="cal-top"><span>🔥 <b>${streak()}</b>일째</span><span>이번 달 <b>${mDays}</b>일 공부</span></div>
+    <div class="cal-head"><button class="cal-nav" data-m="-1" aria-label="이전 달">‹</button><h2>${y}년 ${mo+1}월</h2><button class="cal-nav" data-m="1" aria-label="다음 달">›</button></div>
+    <div class="cal-grid cal-wd">${WD.split('').map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>
+    <div class="legend"><span><i style="background:#a3d4b0"></i>공부한 날 (진할수록 많이)</span><span><i style="background:#e8590c"></i>복습 예정 장수</span></div>
+    ${calSyncing?'<p class="cal-note">지난 기록을 불러오는 중…</p>':calSyncFail?'<p class="cal-note">지난 기록을 못 불러왔어요. 오늘부터 기록해요.</p>':''}
+  </div>
+  <div class="panel stack"><h2>앞으로 7일 복습</h2>
+    <div class="cal-wk">${wk.map(x=>`<button class="cal-bar${x.n>=5&&x.n>=avg*1.5?' heavy':''}" data-d="${x.d}" aria-label="${x.lab} 복습 ${x.n}장"><em>${x.n}</em><i style="height:${Math.round(x.n/max*70)}px"></i><span>${x.lab}</span></button>`).join('')}</div>
+    <p class="cal-note">진한 주황은 복습이 평소보다 몰린 날이에요. 날짜를 누르면 어떤 한자인지 보여요.</p>
+  </div>`;
+  $('#v-cal').querySelectorAll('.cal-nav').forEach(b=>b.onclick=()=>{ calMonth=new Date(y,mo+ +b.dataset.m,1); renderCal(); });
+  $('#v-cal').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>openDay(b.dataset.d));
+}
+function openDay(d){
+  const t=today(), [y,m,dd]=d.split('-').map(Number);
+  const nw=d<=t?newOn(d):[], st=d<=t?studiedOn(d).filter(k=>!nw.includes(k)):[];
+  const due=d>=t?(dueByDay()[d]||[]):[], dueNow=due.filter(isDue), keys=[...nw,...st];
+  const chips=a=>`<div class="cal-ks">${a.map(k=>`<button class="cal-k" data-k="${k}" title="${esc(BY[k].hun)}">${k}</button>`).join('')}</div>`;
+  const sec=(h,a)=>a.length?`<div class="label">${h} ${a.length}</div>${chips(a)}`:'';
+  let body=`<h2 style="margin:0">${m}월 ${dd}일 (${WD[new Date(y,m-1,dd).getDay()]})${d===t?' · 오늘':''}</h2>`+sec('새로 배운 한자',nw)+sec('복습한 한자',st)+sec(d===t?'오늘 복습할 한자':'복습 예정',due);
+  if(!keys.length&&!due.length) body+=`<p class="cal-note">${d<t?'이날은 공부 기록이 없어요.':d===t?'아직 오늘 공부 기록이 없어요.':'이날 복습 예정 카드가 없어요.'}</p>`;
+  if(d>t&&due.length) body+='<p class="cal-note">그날 아침 8시부터 복습할 수 있어요. 미리 하면 복습 간격이 흐트러져요.</p>';
+  const btns=[]; if(d===t&&dueNow.length) btns.push(`<button class="btn primary" data-go="due">바로 복습 (${dueNow.length})</button>`);
+  if(keys.length) btns.push(`<button class="btn" data-go="day">이날 한자 복습하기</button>`);
+  if(btns.length) body+=`<div class="row">${btns.join('')}</div>`;
+  $('#dlgBody').innerHTML=`<div class="stack">${body}</div>`;
+  $('#dlgBody').querySelectorAll('.cal-k').forEach(b=>b.onclick=()=>openDetail(b.dataset.k));
+  $('#dlgBody').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ $('#dlg').close(); go('study',{keys:b.dataset.go==='due'?dueNow:keys}); });
+  if(!$('#dlg').open) $('#dlg').showModal();
+}
 /* ---------- home ---------- */
 /* ---------- favorites ---------- */
 const STAR='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2 6.3 20.3l1.2-6.4L2.8 9.5l6.4-.8z"/></svg>';
@@ -2352,7 +2453,7 @@ function answer(b){
   }
   $('#nx').onclick=nextQ; $('#nx').focus();
 }
-function penalize(k){fApply(k,1); card(k).d=Date.now(); card(k).t=today(); markStudied(); save()}
+function penalize(k){fApply(k,1); card(k).d=Date.now(); card(k).t=today(); logHist(k); markStudied(); save()}
 function nextQ(){Q.i++;Q.answered=false;renderQ()}
 
 /* ---------- list ---------- */
