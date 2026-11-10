@@ -134,6 +134,29 @@ nav button{position:relative}
 
 dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);color:var(--ink);width:min(440px,calc(100% - 32px));padding:20px}
 /* v45 복습 알림 질문 (알림 미리보기형) */
+/* v46 학습 끝 「몰랐던 한자」 모아보기 */
+.done.wide{width:100%;max-width:520px;margin:0 auto}
+.unk{width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.unk h3{margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.unk-n{font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px;color:var(--seal);border:1px solid var(--seal)}
+.unk-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.unk-g.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.unk-t{border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;min-width:0;display:grid;gap:2px}
+.unk-t .k{font-family:var(--f-kanji);font-size:40px;line-height:1.1}
+.unk-g.c3 .unk-t .k{font-size:32px}
+.unk-s{display:grid;gap:2px;min-width:0}
+.unk-t b{font-size:13px}
+.unk-t small{font-size:11.5px;color:var(--muted);font-family:var(--f-kana)}
+.unk-g.c3 .unk-t:not(.open) small{display:none}
+.unk-t.open{grid-column:1/-1;grid-template-columns:64px minmax(0,1fr);gap:10px;text-align:left;background:var(--paper);border-color:var(--accent);padding:10px}
+.unk-t.open .k{font-size:48px;text-align:center}
+.unk-t.open b{font-size:15px}
+.unk-d{display:grid;gap:4px;margin-top:4px}
+.unk-mn{font-size:12.5px;line-height:1.5}
+.unk-ex{font-size:12.5px;color:var(--muted);line-height:1.5}
+.unk-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.unk-acts{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;width:100%}
+.unk-sub{border-color:transparent;background:transparent;color:var(--muted);font-weight:500;padding:8px 10px}
 #pushDlg{padding:0;overflow:hidden;border-radius:20px;width:min(380px,calc(100% - 32px))}
 .pa-top{background:var(--sky);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 16%,var(--sky)),var(--sky));padding:20px 14px 16px}
 .pa-time{text-align:center;font-weight:600;font-size:40px;letter-spacing:-.02em;line-height:1}
@@ -2122,7 +2145,7 @@ function toast(t){ const el=document.createElement('div'); el.className='toast';
 /* ---------- v31 오류 신고 · 관리자 답장 ----------
    서버: supabase/2026-10-29_reports.sql (reports, report_messages, storage 'reports')
    신고는 서버 계정만. 이미지는 올리기 전에 줄여서(긴 변 1400px JPEG) 장당 약 300KB 이하. */
-const APP_VER='v45';
+const APP_VER='v46';
 const REP_KIND={kanji:'한자 정보 틀림',explain:'풀이·예문 틀림',screen:'화면 깨짐',etc:'기타'};
 const REP_ST={new:'새 신고',seen:'확인함',fixed:'수정 완료'};
 const TAB_KO={home:'오늘',study:'카드',quiz:'퀴즈',write:'작문',list:'목록',fav:'즐겨찾기'};
@@ -2461,7 +2484,7 @@ async function maybeAskPush(u){
   $('#pushNo').onclick=()=>d.close();
   d.showModal();
 }
-navigator.serviceWorker&&navigator.serviceWorker.addEventListener('message',ev=>{ if(ev.data&&ev.data.type==='open-review'){ try{ go('study'); }catch(e){} } });
+navigator.serviceWorker&&navigator.serviceWorker.addEventListener('message',ev=>{ if(ev.data&&ev.data.type==='open-review'){ try{ go('study',{keys:dueList().map(c=>c.k)}); }catch(e){} } });
 function boot(){
   const menu=$('#userMenu');
   $('#userChip').onclick=e=>{e.stopPropagation(); menu.hidden=!menu.hidden; $('#userChip').setAttribute('aria-expanded',!menu.hidden)};
@@ -2535,9 +2558,9 @@ function setupHTML(){
       <div style="font-size:12px;color:var(--muted)">레벨마다 그 레벨 수준의 예문이 나와요. 여러 개 고르면 쉬운 레벨부터 나와요.</div></div>
     <div class="stack" style="gap:8px"><div class="label">하루 새 한자</div>
       <div class="chips" id="npdchips">${[5,10,15,20,30].map(n=>`<button class="chip" data-v="${n}" aria-pressed="${n===S.settings.newPerDay}">${n}개</button>`).join('')}</div></div>
-    <div class="sumbox"><b>${due}</b> 복습 + <b>${nw}</b> 새 한자 = 오늘 카드 <b>${due+nw}</b>장</div>
-    <div class="row" style="justify-content:flex-end"><button class="btn" id="setupCancel">닫기</button><button class="btn primary" id="setupGo" ${due+nw?'':'disabled'}>${due+nw?'이대로 시작':'오늘 분량 끝'}</button></div>
-    ${due+nw?'':`<div style="font-size:12px;color:var(--muted);text-align:right">더 하고 싶으면 하루 새 한자 수를 늘리거나 "새 한자 5개 더"를 눌러 보세요.</div>`}
+    <div class="sumbox">오늘 새 한자 <b>${nw}</b>개${due?`<div style="font-size:12px;color:var(--muted);margin-top:4px">복습 ${due}장은 홈 위 「바로 복습」에서 따로 해요</div>`:''}</div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" id="setupCancel">닫기</button><button class="btn primary" id="setupGo" ${nw?'':'disabled'}>${nw?'이대로 시작':'오늘 새 한자 끝'}</button></div>
+    ${nw?'':`<div style="font-size:12px;color:var(--muted);text-align:right">더 하고 싶으면 하루 새 한자 수를 늘리거나 "새 한자 5개 더"를 눌러 보세요.</div>`}
     <details class="more"><summary>복습 방식 · 진도 초기화</summary>
       <div style="font-size:13px;color:var(--muted);margin:8px 0">복습 방식: FSRS. 한자마다 기억이 90%로 떨어지는 날을 계산해 그날 복습시켜요. 몰라요는 10분 뒤, 나머지는 버튼 아래 표시된 날짜에 다시 나와요. 기억이 21일 이상 유지되면 ‘외움’으로 표시돼요.</div>
       <div class="row"><button class="btn" id="resetBtn">진도 초기화</button>
@@ -2595,24 +2618,53 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) tickDail
 
 /* ---------- study (flashcards + SRS) ---------- */
 let hinted=false; let SQ=[], SI=0, flipped=false, sDone=0, sTotal=0;
+let SU=[], SMODE='auto';   // v46: 이번 학습에서 「몰라요」 누른 한자(중복 없이 순서대로), 학습 종류
 function startStudy(mode){
   rollDay();
   let q;
   if(mode==='extra'){ q=pool().filter(x=>!card(x.k)).slice(0,5); }
   else if(mode==='fav'){ q=shuffle(favList()); }
   else if(mode&&mode.keys){ q=mode.keys.map(k=>BY[k]).filter(Boolean); }
-  else q=[...dueList(),...newList()];
-  SQ=q.map(x=>x.k); SI=0; flipped=false; hinted=false; sDone=0; sTotal=SQ.length;
+  else q=newList();          // v46: 「학습 시작」은 새 한자만. 복습은 홈 상단 「바로 복습」에서
+  SMODE=typeof mode==='string'?mode:'keys';
+  SQ=q.map(x=>x.k); SI=0; flipped=false; hinted=false; sDone=0; sTotal=SQ.length; SU=[];
   renderStudy();
+}
+/* v46: 학습 끝 화면의 「몰랐던 한자」 모아보기. 5개부터 한 줄에 3개 */
+function unkHTML(){
+  const c3=SU.length>=5;
+  const tile=k=>{ const x=BY[k]; return `<button type="button" class="unk-t" data-k="${k}"><span class="k">${x.k}</span><span class="unk-s"><b>${esc(x.hun)}</b><small>${esc(x.on)}${x.on&&x.kun?' · ':''}${esc(x.kun)}</small></span></button>`; };
+  return `<div class="unk"><h3>몰랐던 한자 <span class="unk-n">${SU.length}개</span></h3>
+    <div class="unk-g${c3?' c3':''}">${SU.map(tile).join('')}</div>
+    <div class="unk-hint">한자를 누르면 풀이가 펼쳐져요</div></div>`;
+}
+function unkOpen(btn){
+  const g=btn.parentNode, was=btn.classList.contains('open');
+  g.querySelectorAll('.unk-t.open').forEach(b=>{ b.classList.remove('open'); const d=b.querySelector('.unk-d'); if(d) d.remove(); });
+  if(was) return;
+  const x=BY[btn.dataset.k]; btn.classList.add('open');
+  const ex=(x.ex||[]).slice(0,2).map(e=>`<span class="kana">${esc(e[0])}</span>(${esc(e[1])}) ${esc(e[2])}`).join(' · ');
+  btn.querySelector('.unk-s').insertAdjacentHTML('beforeend',`<span class="unk-d">${x.mn?`<span class="unk-mn">${esc(x.mn)}</span>`:''}${ex?`<span class="unk-ex">${ex}</span>`:''}</span>`);
 }
 function renderStudy(){
   const el=$('#v-study'); setFocusBar(sDone,sDone+SQ.length,SQ.length?'남은 '+SQ.length:'완료');
   if(!SQ.length){
     const nextDue=Object.values(S.cards).map(c=>c.d).filter(d=>d>Date.now()).sort((a,b)=>a-b)[0];
-    el.innerHTML=`<div class="stage"><div class="done"><div class="seal">済</div><h2>오늘 카드 끝!</h2>
-      <div style="color:var(--muted);font-size:14px">${sDone?`${sDone}장 학습했어요. `:''}${nextDue?'다음 복습: '+new Date(nextDue).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>
-      <div class="row" style="justify-content:center"><button class="btn primary" id="doneQuiz">퀴즈로 확인하기</button><button class="btn" id="doneExtra">새 한자 5개 더</button></div></div></div>`;
-    el.querySelector('#doneQuiz').onclick=()=>go('quiz'); el.querySelector('#doneExtra').onclick=()=>startStudy('extra'); return;
+    const dueN=dueList().length, noNew=!sDone&&SMODE==='auto';
+    const head=noNew?'오늘 새 한자 끝!':'오늘 카드 끝!';
+    const sub=noNew?(dueN?`복습 ${dueN}장은 홈 위 「바로 복습」에서 할 수 있어요.`:'더 하고 싶으면 「새 한자 5개 더」를 눌러 보세요.')
+      :`${sDone?`${sDone}장 학습했어요${SU.length?` · 몰라요 ${SU.length}장`:''}. `:''}${nextDue?'다음 복습: '+new Date(nextDue).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}`;
+    const acts=SU.length
+      ?`<div class="unk-acts"><button class="btn primary" id="doneAgain">이 ${SU.length}개만 카드로 다시</button><button class="btn" id="doneHome">나가기</button></div>
+        <div class="row" style="justify-content:center;gap:4px"><button class="btn unk-sub" id="doneQuiz">퀴즈로 확인하기</button><button class="btn unk-sub" id="doneExtra">새 한자 5개 더</button></div>`
+      :`<div class="row" style="justify-content:center"><button class="btn primary" id="doneQuiz">퀴즈로 확인하기</button><button class="btn" id="doneExtra">새 한자 5개 더</button></div>`;
+    el.innerHTML=`<div class="stage"><div class="done${SU.length?' wide':''}"><div class="seal">済</div><h2>${head}</h2>
+      <div style="color:var(--muted);font-size:14px">${sub}</div>
+      ${SU.length?unkHTML():''}${acts}</div></div>`;
+    el.querySelector('#doneQuiz').onclick=()=>go('quiz'); el.querySelector('#doneExtra').onclick=()=>startStudy('extra');
+    if(SU.length){ const again=SU.slice(); el.querySelector('#doneAgain').onclick=()=>startStudy({keys:again}); el.querySelector('#doneHome').onclick=()=>go('home');
+      el.querySelectorAll('.unk-t').forEach(b=>b.onclick=()=>unkOpen(b)); }
+    return;
   }
   const x=BY[SQ[0]], isNew=!card(x.k);
   el.innerHTML=`<div class="stage">
@@ -2630,7 +2682,7 @@ function hint(){ if(!flipped&&!hinted){hinted=true;renderStudy()} }
 function flip(){ if(!flipped){flipped=true;renderStudy()} }
 function rate(r){
   const k=SQ.shift(); grade(k,r); sDone++;
-  if(r===1) SQ.splice(Math.min(3,SQ.length),0,k);        // 몰라요: 3장 뒤에 다시
+  if(r===1&&!SU.includes(k)) SU.push(k);                  // v46 몰라요: 다시 끼워 넣지 않고 끝 화면에서 모아 보기 (10분 뒤 복습 시각은 그대로)
   flipped=false; hinted=false; renderStudy();
 }
 document.addEventListener('keydown',e=>{
