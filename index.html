@@ -133,6 +133,22 @@ nav button{position:relative}
 .chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 
 dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);color:var(--ink);width:min(440px,calc(100% - 32px));padding:20px}
+/* v45 복습 알림 질문 (알림 미리보기형) */
+#pushDlg{padding:0;overflow:hidden;border-radius:20px;width:min(380px,calc(100% - 32px))}
+.pa-top{background:var(--sky);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 16%,var(--sky)),var(--sky));padding:20px 14px 16px}
+.pa-time{text-align:center;font-weight:600;font-size:40px;letter-spacing:-.02em;line-height:1}
+.pa-date{text-align:center;font-size:12px;color:var(--muted);margin:5px 0 14px}
+.pa-noti{display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:center;background:var(--paper);border-radius:16px;padding:10px 12px;box-shadow:0 4px 14px rgba(29,36,51,.12);text-align:left}
+.pa-noti img{width:36px;height:36px;border-radius:9px;object-fit:cover;display:block}
+.pa-noti .t{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.pa-noti .t b{color:var(--ink)}
+.pa-noti .m{font-size:13.5px;line-height:1.45}
+.pa-noti.back{transform:scale(.94);opacity:.72;margin-top:-4px}
+.pa-body{padding:16px}
+.pa-body h3{font-size:19px;margin:0 0 6px}
+.pa-body p{font-size:14px;color:var(--muted);margin:0 0 14px;line-height:1.6}
+.pa-body .btn{width:100%;padding:12px 16px;border-radius:12px;font-size:15px;font-weight:600}
+.pa-body .pa-no{margin-top:6px;border-color:transparent;background:transparent;color:var(--muted);font-weight:500}
 dialog::backdrop{background:rgba(10,14,24,.45)}
 .lvl.off{opacity:.5}
 .chip:disabled{opacity:.45;cursor:default}
@@ -2106,7 +2122,7 @@ function toast(t){ const el=document.createElement('div'); el.className='toast';
 /* ---------- v31 오류 신고 · 관리자 답장 ----------
    서버: supabase/2026-10-29_reports.sql (reports, report_messages, storage 'reports')
    신고는 서버 계정만. 이미지는 올리기 전에 줄여서(긴 변 1400px JPEG) 장당 약 300KB 이하. */
-const APP_VER='v44';
+const APP_VER='v45';
 const REP_KIND={kanji:'한자 정보 틀림',explain:'풀이·예문 틀림',screen:'화면 깨짐',etc:'기타'};
 const REP_ST={new:'새 신고',seen:'확인함',fixed:'수정 완료'};
 const TAB_KO={home:'오늘',study:'카드',quiz:'퀴즈',write:'작문',list:'목록',fav:'즐겨찾기'};
@@ -2432,9 +2448,18 @@ async function maybeAskPush(u){
   const cur=await pushSub(); if(cur&&await pushMine(cur)) return;
   if(Auth.current()!==u||$('#guideDlg').open||$('#dlg').open) return;
   try{ localStorage.setItem(pushAskKey(u.uid),'1'); }catch(e){}
-  $('#dlgBody').innerHTML=`<h3 style="margin:0 0 8px">복습 알림 받을래요?</h3><p style="margin:0;line-height:1.6">복습할 카드가 생기면 아침 8시에, 「몰라요」 카드는 앱을 닫고 10분 뒤에 알려 줘요.<br>이름 메뉴 → 「복습 알림 끄기」로 언제든 끌 수 있어요.</p><div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn primary" id="pushYes">알림 받기</button></div>`;
-  $('#pushYes').onclick=async()=>{ $('#dlg').close(); await pushOn(u); };
-  $('#dlg').showModal();
+  // v45: 실제로 받게 될 알림 모양을 먼저 보여 준다 (아이콘 = 앱 아이콘 강숙이 사진, 문구 = 서버 notify 문구 그대로)
+  let d=$('#pushDlg'); if(!d){ d=document.createElement('dialog'); d.id='pushDlg'; document.body.appendChild(d); }
+  const tm=new Date(Date.now()+86400000), date=tm.toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'});
+  const n=dueList().length||12, ic='<img src="./icons/icon-192.png" alt="">';
+  d.innerHTML=`<div class="pa-top"><div class="pa-time">8:00</div><div class="pa-date">${esc(date)}</div>
+    <div class="pa-noti">${ic}<div><div class="t"><b>한자 노트</b><span>지금</span></div><div class="m">오늘 복습 ${n}장이 기다려요</div></div></div>
+    <div class="pa-noti back">${ic}<div><div class="t"><b>한자 노트</b><span>어제</span></div><div class="m">아까 헷갈린 3장, 지금 다시 보면 딱 좋아요 (10분 지났어요)</div></div></div></div>
+    <div class="pa-body"><h3>이런 알림을 받아 볼래요?</h3><p>외운 한자를 잊기 직전에 딱 한 번 알려 줘요. 하루에 여러 번 울리지 않아요.<br>이름 메뉴에서 언제든 끌 수 있어요.</p>
+    <button class="btn primary" id="pushYes">알림 받기</button><button class="btn pa-no" id="pushNo">괜찮아요</button></div>`;
+  $('#pushYes').onclick=async()=>{ d.close(); await pushOn(u); };
+  $('#pushNo').onclick=()=>d.close();
+  d.showModal();
 }
 navigator.serviceWorker&&navigator.serviceWorker.addEventListener('message',ev=>{ if(ev.data&&ev.data.type==='open-review'){ try{ go('study'); }catch(e){} } });
 function boot(){
